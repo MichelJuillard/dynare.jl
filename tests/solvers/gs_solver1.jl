@@ -1,12 +1,22 @@
-include("dgges.jl")
-using DGGES: dgges!
+include("dgges_algo.jl")
+using DGGES
 
+type GsSolverWS
+    dgges_ws::DGGES.DggesWS
 
-function gs_solver1(D,E,model,qz_criterium,check=false)
-    D,E,e,ns,Q,Z = dgges!('N','V',E,D)
-    gx = -(Z[1:ns,ns+1:end]/Z[ns+1:end,ns+1:end])'
-    hx1 = Z[1:ns,1:ns]/E[1:ns, 1:ns]
-    hx2 = D[1:ns,1:ns]/Z[1:ns,1:ns]
+    function GsSolverWS(D,E)
+        dgges_ws = DGGES.DggesWS(Ref{UInt8}('N'),Ref{UInt8}('V'),E,D)
+        new(dgges_ws)
+    end
+end
+
+function gs_solver_core!(ws,D,E,model,qz_criterium,check=false)
+    
+    DGGES.dgges_core!(ws.dgges_ws,E,D)
+    ns = ws.dgges_ws.sdim[]
+    gx = -(ws.dgges_ws.vsr[1:ns,ns+1:end]/ws.dgges_ws.vsr[ns+1:end,ns+1:end])'
+    hx1 = ws.dgges_ws.vsr[1:ns,1:ns]/E[1:ns, 1:ns]
+    hx2 = D[1:ns,1:ns]/ws.dgges_ws.vsr[1:ns,1:ns]
     hx = hx1*hx2
     ghx = zeros(model.endo_nbr, model.n_bkwrd + model.n_both)
     ghx[model.i_bkwrd,:] = hx[1:model.n_bkwrd,:]

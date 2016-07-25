@@ -85,6 +85,19 @@ function Model(endo_nbr,lead_lag_incidence)
           icolsD,jcolsD,icolsE,jcolsE,colsUD,colsUE,i_cur_fwrd)                  
 end
     
+type FirstOrderSolverWS
+    gs_solver_ws::GsSolverWS
+
+    function FirstOrderSolverWS(algo, jacobian, model)
+        if model.n_static > 0
+            Q, jacobian_ = remove_static(jacobian,model.p_static)
+        end
+        D, E = get_DE(jacobian_[model.n_static+1:end,:],model)
+        gs_solver_ws = GsSolverWS(D,E)
+        new(gs_solver_ws)
+    end
+end
+        
 function get_ABC!(jacobian,model,A,B,C)
     A[:,model.i_fwrd_ns] = jacobian[:,model.p_fwrd_b]
     B[:,model.i_current] = jacobian[:,model.p_current]
@@ -121,8 +134,8 @@ function add_static(ghx,gx,hx,A,B,C,jacobian,model)
     ghx[model.i_static,:] = temp
     return ghx
 end
-                       
-function first_order_solver(algo, jacobian, model, options)
+
+function first_order_solver(ws,algo, jacobian, model, options)
     model = Model(model.endo_nbr,model.lead_lag_incidence)
     if model.n_static > 0
         Q, jacobian_ = remove_static(jacobian,model.p_static)
@@ -138,7 +151,7 @@ function first_order_solver(algo, jacobian, model, options)
         hx = ghx(model.hx_rows,:)
     elseif algo == "GS"
         D, E = get_DE(jacobian_[model.n_static+1:end,:],model)
-        ghx,gx,hx = gs_solver1(D,E,model,options.generalized_schur.criterium)
+        ghx,gx,hx = gs_solver_core!(ws.gs_solver_ws,D,E,model,options.generalized_schur.criterium)
     end
     if model.n_static > 0
         ghx = add_static(ghx,gx,hx,A,B,C,jacobian_,model)

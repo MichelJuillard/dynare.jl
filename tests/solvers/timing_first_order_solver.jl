@@ -39,13 +39,14 @@ jacobian2 = kron(eye(n),jacobian[:,1:12])
 m = Model(6*n,lli2)
 
 
-function solver_loop(iter,algo,jacobian,model,options)
+function solver_loop(iter,ws,algo,jacobian,model,options)
     for i=1:iter
-        ghx,gx,hx = first_order_solver(algo,jacobian,model,options)
+        ghx,gx,hx = first_order_solver(ws,algo,jacobian,model,options)
     end
 end
 
-ghx,gx,hx = first_order_solver("GS", jacobian2, m, options)
-@time ghx,gx,hx = first_order_solver("GS", jacobian2, m, options)
-solver_loop(10,"GS",jacobian2,m,options)
-@time solver_loop(10,"GS",jacobian2,m,options)
+ws = FirstOrderSolverWS("GS", jacobian2, m)
+ghx,gx,hx = first_order_solver(ws,"GS", jacobian2, m, options)
+@time ghx,gx,hx = first_order_solver(ws,"GS", jacobian2, m, options)
+solver_loop(10,ws,"GS",jacobian2,m,options)
+@time solver_loop(10,ws,"GS",jacobian2,m,options)
