@@ -67,20 +67,22 @@ end
 
 function test_solver(endo_nbr,lead_lag_incidence,options,algo,jacobian)
     m = Model(endo_nbr,lead_lag_incidence)
+    ws = FirstOrderSolverWS("GS", jacobian2, m)
     Q, jacobian_ = remove_static(jacobian,m.p_static)
     @test size(Q) == (6,6)
     @test size(jacobian_) == (6,14)
     D,E = get_DE(jacobian_[m.n_static+1:end,:],m)
-    ghx,gx,hx = first_order_solver(algo, jacobian, m, options)
+    ghx,gx,hx = first_order_solver(ws,algo, jacobian, m, options)
     res = norm(ghx-oo_["dr"]["ghx"][squeeze(round(Int,oo_["dr"]["inv_order_var"]),2),:],Inf)
     @test res < 1e-13
 end
 
 function solve_large_model(endo_nbr,lead_lag_incidence,options,algo,jacobian)
     m = Model(endo_nbr,lead_lag_incidence)
+    ws = FirstOrderSolverWS("GS", jacobian2, m)
     Q, jacobian_ = remove_static(jacobian,m.p_static)
     D,E = get_DE(jacobian_[m.n_static+1:end,:],m)
-    ghx,gx,hx = first_order_solver(algo, jacobian, m, options)
+    ghx,gx,hx = first_order_solver(ws,algo, jacobian, m, options)
 end    
     
 #test_model(6,lli)
