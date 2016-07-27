@@ -55,23 +55,24 @@ end
 
 function test_getDE(endo_nbr,lead_lag_incidence,jacobian)
     m = Model(endo_nbr,lead_lag_incidence)
-    Q, jacobian_ = remove_static(jacobian,m.i_static)
-    D,E = get_DE(jacobian_[m.n_static+1:end,:],m)
+    ws = FirstOrderSolverWS("GS", jacobian, m)
+    remove_static(ws,jacobian,m.p_static)
+    @test norm(jacobian[m.n_static+1:end,m.p_static] - zeros(m.endo_nbr-m.n_static,m.n_static),Inf) < 1e-15
+    D,E = get_DE(jacobian[m.n_static+1:end,:],m)
     Dtarget = zeros(6,6)
-    Dtarget[1:5,[1, 2, 4, 5, 6]] = jacobian_[:,[6, 7, 10, 11, 12]]
+    Dtarget[1:5,[1, 2, 4, 5, 6]] = jacobian[2:6,[6, 7, 10, 11, 12]]
     Dtarget[6,3] = 1
-    Etarget = -[jacobian_[:,[1, 2, 3, 4, 5, 9]]; [0 0 0 0 0 -1]] 
+    Etarget = -[jacobian[2:6,[1, 2, 3, 4, 5, 9]]; [0 0 0 0 0 -1]] 
     @test D == Dtarget
     @test E == Etarget 
 end
 
 function test_solver(endo_nbr,lead_lag_incidence,options,algo,jacobian)
     m = Model(endo_nbr,lead_lag_incidence)
-    ws = FirstOrderSolverWS("GS", jacobian2, m)
-    Q, jacobian_ = remove_static(jacobian,m.p_static)
-    @test size(Q) == (6,6)
-    @test size(jacobian_) == (6,14)
-    D,E = get_DE(jacobian_[m.n_static+1:end,:],m)
+    ws = FirstOrderSolverWS("GS", jacobian, m)
+    remove_static(ws,jacobian,m.p_static)
+    @test size(jacobian) == (6,14)
+    D,E = get_DE(jacobian[m.n_static+1:end,:],m)
     ghx,gx,hx = first_order_solver(ws,algo, jacobian, m, options)
     res = norm(ghx-oo_["dr"]["ghx"][squeeze(round(Int,oo_["dr"]["inv_order_var"]),2),:],Inf)
     @test res < 1e-13
@@ -79,20 +80,17 @@ end
 
 function solve_large_model(endo_nbr,lead_lag_incidence,options,algo,jacobian)
     m = Model(endo_nbr,lead_lag_incidence)
-    ws = FirstOrderSolverWS("GS", jacobian2, m)
-    Q, jacobian_ = remove_static(jacobian,m.p_static)
-    D,E = get_DE(jacobian_[m.n_static+1:end,:],m)
+    ws = FirstOrderSolverWS("GS", jacobian, m)
+    remove_static(ws,jacobian,m.p_static)
+    D,E = get_DE(jacobian[m.n_static+1:end,:],m)
     ghx,gx,hx = first_order_solver(ws,algo, jacobian, m, options)
 end    
     
-#test_model(6,lli)
-#test_getDE(6, lli, jacobian)
-#@time test_solver(6, lli, options, "GS", jacobian)
-#@time test_solver(6, lli, options, "GS", jacobian)
-#@time solve_large_model(n*6,lli2,options,"GS",jacobian2)
-#@time solve_large_model(n*6,lli2,options,"GS",jacobian2)
+test_model(6,lli)
+test_getDE(6, lli, jacobian)
+@time test_solver(6, lli, options, "GS", jacobian)
+@time test_solver(6, lli, options, "GS", jacobian)
+@time solve_large_model(n*6,lli2,options,"GS",jacobian2)
+@time solve_large_model(n*6,lli2,options,"GS",jacobian2)
 solve_large_model(n*6,lli2,options,"GS",jacobian2)
-Profile.clear()
-@profile(solve_large_model(n*6,lli2,options,"GS",jacobian2))
-using ProfileView
-ProfileView.view()
+

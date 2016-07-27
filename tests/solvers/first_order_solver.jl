@@ -1,3 +1,4 @@
+include("qr_algo.jl")
 include("cycle_reduction.jl")
 include("gs_solver1.jl")
 
@@ -86,15 +87,18 @@ function Model(endo_nbr,lead_lag_incidence)
 end
     
 type FirstOrderSolverWS
+    jacobian_static::Array{Float64,2} 
+    qr_ws::QrWS
     gs_solver_ws::GsSolverWS
 
-    function FirstOrderSolverWS(algo, jacobian, model)
-        if model.n_static > 0
-            Q, jacobian_ = remove_static(jacobian,model.p_static)
+    function FirstOrderSolverWS(algo, jacobian, m)
+        if m.n_static > 0
+            jacobian_static = Array{Float64,2}(m.endo_nbr,m.n_static)
+            qr_ws = QrWS(jacobian_static)
         end
-        D, E = get_DE(jacobian_[model.n_static+1:end,:],model)
+        D, E = get_DE(jacobian[m.n_static+1:end,:],m)
         gs_solver_ws = GsSolverWS(D,E)
-        new(gs_solver_ws)
+        new(jacobian_static,qr_ws,gs_solver_ws)
     end
 end
         
@@ -105,11 +109,14 @@ function get_ABC!(jacobian,model,A,B,C)
     return A, B, C
 end
 
-function remove_static(jacobian,p_static)
+function remove_static(ws,jacobian,p_static)
     n = length(p_static)
-    Q = qr(jacobian[:,p_static];thin=false)
-    jacobian_ = Q[1]'*jacobian
-    return Q[1], jacobian_
+    for i=1:n
+        ws.jacobian_static[:,i] = jacobian[:,p_static[i]]
+    end
+    dgeqrf_core!(ws.qr_ws,ws.jacobian_static)
+    dormrqf_core!(ws.qr_ws,Ref{UInt8}('L'),Ref{UInt8}('T'),ws.jacobian_static,
+                      jacobian)
 end
 
 function get_DE(jacobian,model)
@@ -138,23 +145,23 @@ end
 function first_order_solver(ws,algo, jacobian, model, options)
     model = Model(model.endo_nbr,model.lead_lag_incidence)
     if model.n_static > 0
-        Q, jacobian_ = remove_static(jacobian,model.p_static)
+        remove_static(ws,jacobian,model.p_static)
     end
     n = model.n_fwrd + model.n_bkwrd + model.n_both
     A = zeros(n,n)
     B = zeros(n,n)
     C = zeros(n,n)
-    A, B, C = get_ABC!(jacobian_[model.n_static+1:end,:],model,A,B,C)
+    A, B, C = get_ABC!(jacobian[model.n_static+1:end,:],model,A,B,C)
     if algo == "CR"
         ghx = cycle_reduction(A,B,C,options.cycle_reduction.tol)
         gx = ghx(model.gx_rows,:)
         hx = ghx(model.hx_rows,:)
     elseif algo == "GS"
-        D, E = get_DE(jacobian_[model.n_static+1:end,:],model)
+        D, E = get_DE(jacobian[model.n_static+1:end,:],model)
         ghx,gx,hx = gs_solver_core!(ws.gs_solver_ws,D,E,model,options.generalized_schur.criterium)
     end
     if model.n_static > 0
-        ghx = add_static(ghx,gx,hx,A,B,C,jacobian_,model)
+        ghx = add_static(ghx,gx,hx,A,B,C,jacobian,model)
     end
     ghx, gx, hx
 end

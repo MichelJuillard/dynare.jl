@@ -13,10 +13,10 @@ E = read(file,"E")
 D1 = copy(D)
 E1 = copy(E)
 
-@time gx =  gs_solver(E,D,1+1e-6,1:3,1:3)
-@time gx =  gs_solver(E,D,1+1e-6,1:3,1:3)
-@time gx1 =  gs_solver1(E1,D1,1+1e-6,1:3,1:3)
-@time gx1 =  gs_solver1(E1,D1,1+1e-6,1:3,1:3)
+#@time gx =  gs_solver(E,D,1+1e-6,1:3,1:3)
+#@time gx =  gs_solver(E,D,1+1e-6,1:3,1:3)
+#@time gx1 =  gs_solver1(E1,D1,1+1e-6,1:3,1:3)
+gx =  gs_solver(E1,D1,1+1e-6,1:3,1:3)
 
 
 inv_order = [5, 6, 2, 3, 1, 4]
