@@ -60,11 +60,12 @@ function Model(endo_nbr,lead_lag_incidence)
     p_both_b = squeeze(lead_lag_incidence[1,i_both],1)
     p_both_f = squeeze(lead_lag_incidence[3,i_both],1)
     n_both = length(i_both)
-    i_cur_fwrd = find((lead_lag_incidence[2,:] .> 0) & (lead_lag_incidence[3,:] .> 0))
-    p_cur_fwrd = squeeze(lead_lag_incidence[2,i_cur_fwrd],1)
+    junk,i_cur_fwrd,p_cur_fwrd = findnz(lead_lag_incidence[2,i_fwrd])
     n_cur_fwrd = length(i_cur_fwrd)
     junk, i_cur_bkwrd, p_cur_bkwrd = findnz(lead_lag_incidence[2,i_bkwrd])
     n_cur_bkwrd = length(i_cur_bkwrd)
+    junk, i_cur_both, p_cur_both = findnz(lead_lag_incidence[2,i_both])
+    n_cur_both = length(i_cur_both)
     i_current = find(lead_lag_incidence[2,i_dyn] .> 0 )
     p_current = squeeze(lead_lag_incidence[2,i_dyn[i_current]],1)
     icolsD = [1:n_cur_bkwrd; n_bkwrd+n_both+(1:(n_fwrd+n_both))]
@@ -72,7 +73,7 @@ function Model(endo_nbr,lead_lag_incidence)
     # derivatives of current values of variables that are both
     # forward and backward are included in the E matrix
     icolsE = [1:(n_bkwrd+n_both); n_bkwrd+n_both+(1:(n_fwrd+n_both))]
-    jcolsE = [p_bkwrd; p_both_b; p_cur_fwrd]
+    jcolsE = [p_bkwrd; p_both_b; p_cur_fwrd; p_cur_both]
     colsUD = n_bkwrd+(1:n_both)
     colsUE = n_both + n_fwrd + colsUD
     n_dyn = endo_nbr - n_static + n_both
@@ -97,7 +98,7 @@ type FirstOrderSolverWS
             qr_ws = QrWS(jacobian_static)
         end
         D, E = get_DE(jacobian[m.n_static+1:end,:],m)
-        gs_solver_ws = GsSolverWS(D,E)
+        gs_solver_ws = GsSolverWS(m,D,E)
         new(jacobian_static,qr_ws,gs_solver_ws)
     end
 end

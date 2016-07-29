@@ -34,8 +34,8 @@ options = Options(cr_opt,gs_opt)
 
 file = matopen("jacobian.mat")
 jacobian = read(file,"jacobia")
-jacobian2 = kron(eye(n),jacobian[:,1:12])
-
+jacobian2 = [kron(eye(n),jacobian[:,1:3]) kron(eye(n),jacobian[:,4:9]) kron(eye(n),jacobian[:,10:12])]
+        
 file = matopen("example1_results.mat")
 oo_ = read(file,"oo_")
 
