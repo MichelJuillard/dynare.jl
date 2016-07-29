@@ -36,7 +36,7 @@ function gs_solver_core!(ws,D,E,model,qz_criterium,check=false)
         error("BK conditions aren't met")
     end
     ws.tmp1 = ws.Z12'
-    gx = -(ws.Z12/ws.Z22)'
+#    gx = -(ws.Z12/ws.Z22)'
     dgesvx_core!(ws.dgesvx_ws,Ref{UInt8}('E'),Ref{UInt8}('T'),ws.Z22,ws.tmp1,ws.gx)
     scal!(length(ws.gx),-1.0,ws.gx,1)
     hx1 = ws.dgges_ws.vsr[1:ns,1:ns]/D[1:ns, 1:ns]
