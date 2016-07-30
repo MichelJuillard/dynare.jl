@@ -90,7 +90,7 @@ end
 type FirstOrderSolverWS
     jacobian_static::Array{Float64,2} 
     qr_ws::QrWS
-    gs_solver_ws::GsSolverWS
+    solver_ws::Union{GsSolverWS,CycleReductionWS}
 
     function FirstOrderSolverWS(algo, jacobian, m)
         if m.n_static > 0
@@ -98,15 +98,19 @@ type FirstOrderSolverWS
             qr_ws = QrWS(jacobian_static)
         end
         D, E = get_DE(jacobian[m.n_static+1:end,:],m)
-        gs_solver_ws = GsSolverWS(m,D,E)
-        new(jacobian_static,qr_ws,gs_solver_ws)
+        if algo == "GS"
+            solver_ws = GsSolverWS(m,D,E)
+        elseif algo == "CR"
+            solver_ws = CycleReductionWS(m)
+        end
+        new(jacobian_static,qr_ws,solver_ws)
     end
 end
         
 function get_ABC!(jacobian,model,A,B,C)
-    A[:,model.i_fwrd_ns] = jacobian[:,model.p_fwrd_b]
+    A[:,model.i_bkwrd_ns] = jacobian[:,model.p_bkwrd_b]
     B[:,model.i_current] = jacobian[:,model.p_current]
-    C[:,model.i_bkwrd_ns] = jacobian[:,model.p_bkwrd_b]
+    C[:,model.i_fwrd_ns] = jacobian[:,model.p_fwrd_b]
     return A, B, C
 end
 
@@ -154,12 +158,24 @@ function first_order_solver(ws,algo, jacobian, model, options)
     C = zeros(n,n)
     A, B, C = get_ABC!(jacobian[model.n_static+1:end,:],model,A,B,C)
     if algo == "CR"
-        ghx = cycle_reduction(A,B,C,options.cycle_reduction.tol)
-        gx = ghx(model.gx_rows,:)
-        hx = ghx(model.hx_rows,:)
+        A, info = cycle_reduction_core(ws.solver_ws,A,B,C,options.cycle_reduction.tol,100)
+        if info[1] > 0
+            error("CR didn't converge")
+        end
+        ghx = zeros(model.endo_nbr,model.n_bkwrd+model.n_both)
+        tmp = zeros(model.endo_nbr,model.endo_nbr)
+        k = sort(union(model.i_bkwrd, model.i_fwrd,model.i_both))
+        tmp[k,k] = A
+        k1 = sort(union(model.i_bkwrd, model.i_both))
+        ghx = tmp[:,k1]
+        gx = ghx[k1,:]
+        hx = ghx[sort(union(model.i_fwrd,model.i_both)),:]
     elseif algo == "GS"
         D, E = get_DE(jacobian[model.n_static+1:end,:],model)
-        ghx,gx,hx = gs_solver_core!(ws.gs_solver_ws,D,E,model,options.generalized_schur.criterium)
+        gs_solver_core!(ws.solver_ws,D,E,model,options.generalized_schur.criterium)
+        ghx = ws.solver_ws.ghx
+        gx = ws.solver_ws.gx
+        hx = ws.solver_ws.hx
     end
     if model.n_static > 0
         ghx = add_static(ghx,gx,hx,A,B,C,jacobian,model)
