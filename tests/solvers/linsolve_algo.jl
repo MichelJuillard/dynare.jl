@@ -1,4 +1,7 @@
-include("dyn_blas_lapack_utils.jl")
+module linsolve_algo
+
+import dyn_blas_lapack_utils: @blasfunc, BlasInt, liblapack, chklapackerror
+export LinSolveWS, linsolve_core!
 
 type LinSolveWS
     ipiv::Array{BlasInt}
@@ -34,4 +37,6 @@ function linsolve_core!(ws::LinSolveWS,trans::Ref{UInt8},a::StridedMatrix{Float6
         println("dgetrs ",info[])
         chklapackerror(info[])
     end
+end
+
 end

@@ -1,7 +1,10 @@
+module dgges_algo
+
 # general Schur decomposition with reordering
 # adataped from ./base/linalg/lapack.jl
 
-include("dyn_blas_lapack_utils.jl")
+import dyn_blas_lapack_utils: @blasfunc, BlasInt, chkstride1, checksquare, chklapackerror, liblapack
+export DggesWS, dgges_core!
 
 const criterium = 1+1e-6
 
@@ -72,9 +75,9 @@ function DggesWS(jobvsl::Ref{UInt8}, jobvsr::Ref{UInt8}, A::StridedMatrix{Float6
     alphar = Array(Float64, n)
     alphai = Array(Float64, n)
     beta = Array(Float64, n)
-    ldvsl = Ref{BlasInt}(jobvsl[] == 'V' ? n : 1)
+    ldvsl = Ref{BlasInt}(jobvsl[] == UInt32('V') ? n : 1)
     vsl = Array(Float64, ldvsl[], n)
-    ldvsr = Ref{BlasInt}(jobvsr[] == 'V' ? n : 1)
+    ldvsr = Ref{BlasInt}(jobvsr[] == UInt32('V') ? n : 1)
     vsr = Array(Float64, ldvsr[], n)
     work = Array(Float64,1)
     lwork = Ref{BlasInt}(-1)
@@ -111,3 +114,4 @@ function dgges_core!(ws::DggesWS,A::StridedMatrix{Float64}, B::StridedMatrix{Flo
 end
 
 
+end

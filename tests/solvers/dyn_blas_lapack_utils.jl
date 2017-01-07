@@ -1,6 +1,9 @@
-import Base: USE_BLAS64
+module dyn_blas_lapack_utils
+
+import Base: USE_BLAS64, LAPACKException
 export dgges_ws, dgges_core
 
+const libblas = Base.libblas_name
 const liblapack = Base.liblapack_name
 
 typealias BlasFloat Union{Float64,Float32,Complex128,Complex64}
@@ -76,3 +79,4 @@ function chklapackerror(ret::BlasInt)
     end
 end
 
+end

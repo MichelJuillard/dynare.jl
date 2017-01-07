@@ -2,6 +2,7 @@ include("make_model.jl")
 include("first_order_solver.jl")
 using Base.Test
 using MAT
+using FirstOrder: Model, FirstOrderSolverWS, remove_static, get_DE, first_order_solver
 
 type Cycle_Reduction
     tol
@@ -58,28 +59,32 @@ function test_solver(endo_nbr,lead_lag_incidence,options,algo,jacobian)
     ws = FirstOrderSolverWS(algo, jacobian, m)
     remove_static(ws,jacobian,m.p_static)
     @test size(jacobian) == (6,12)
-    D,E = get_DE(jacobian[m.n_static+1:end,:],m)
-    ghx,gx,hx = first_order_solver(ws,algo, jacobian, m, options)
-    res = norm(ghx-oo_["dr"]["ghx"][squeeze(round(Int,oo_["dr"]["inv_order_var"]),2),:],Inf)
+    println("small model first round")
+    first_order_solver(ws,algo, jacobian, m, options)
+    println("small model second round")
+    first_order_solver(ws,algo, jacobian, m, options)
+    res = norm(ws.ghx-oo_["dr"]["ghx"][squeeze(round(Int,oo_["dr"]["inv_order_var"]),2),:],Inf)
     @test res < 1e-13
 end
 
 function solve_large_model(endo_nbr,lead_lag_incidence,options,algo,jacobian)
     m = Model(endo_nbr,lead_lag_incidence)
     ws = FirstOrderSolverWS(algo, jacobian, m)
-    remove_static(ws,jacobian,m.p_static)
-    D,E = get_DE(jacobian[m.n_static+1:end,:],m)
-    ghx,gx,hx = first_order_solver(ws,algo, jacobian, m, options)
+    @time    first_order_solver(ws,algo, jacobian, m, options)
 end    
 
 lli, jacobian = make_model(1)
-test_model(6,lli)
-test_getDE(6, lli, jacobian)
-test_solver(6, lli, options, "CR", jacobian)
+#test_model(6,lli)
+#test_getDE(6, lli, jacobian)
+#test_solver(6, lli, options, "CR", jacobian)
 
-n = 2
+n = 1
 lli2, jacobian2 = make_model(n)
-solve_large_model(n*6,lli2,options,"CR",jacobian2)
+println("large model")
+solve_large_model(n*6,lli2,options,"GS",jacobian2)
+solve_large_model(n*6,lli2,options,"GS",jacobian2)
+#println("OK")
+#solve_large_model(n*6,lli2,options,"CR",jacobian2)
 #@time test_solver(6, lli, options, "GS", jacobian)
 #@time solve_large_model(n*6,lli2,options,"GS",jacobian2)
 

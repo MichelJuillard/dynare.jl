@@ -1,4 +1,7 @@
-include("dyn_blas_lapack_utils.jl")
+module qr_algo
+
+import dyn_blas_lapack_utils: @blasfunc, BlasInt, liblapack, chklapackerror
+export QrWS, dgeqrf_core!, dormrqf_core!
 
 type QrWS
     tau::Array{Float64,1}
@@ -53,6 +56,6 @@ function dormrqf_core!(ws::QrWS,side::Ref{UInt8},trans::Ref{UInt8},A::StridedMat
     chklapackerror(ws.info[])
 end
     
-
+end 
                       
 

@@ -1,124 +1,62 @@
-include("qr_algo.jl")
-include("cycle_reduction.jl")
-include("gs_solver1.jl")
+module FirstOrder
 
-type Model
-    endo_nbr
-    lead_lag_incidence
-    n_static
-    n_fwrd
-    n_bkwrd
-    n_both
-    DErows1
-    DErows2
-    n_dyn
-    i_static
-    i_dyn
-    i_bkwrd
-    i_bkwrd_b
-    i_bkwrd_ns
-    i_current
-    i_fwrd
-    i_fwrd_b
-    i_fwrd_ns
-    i_both
-    p_static
-    p_bkwrd
-    p_bkwrd_b
-    p_current
-    p_fwrd
-    p_fwrd_b
-    p_both_b
-    p_both_f
-    icolsD
-    jcolsD
-    icolsE
-    jcolsE
-    colsUD
-    colsUE
-    i_cur_fwrd
-end
+using model
+using qr_algo
+using cycle_reduction
+using gs_solver1
+using linsolve_algo
 
-function Model(endo_nbr,lead_lag_incidence)
-    i_static = find((lead_lag_incidence[1,:] .== 0) & (lead_lag_incidence[3,:] .== 0))
-    p_static = squeeze(lead_lag_incidence[2,i_static],1)
-    i_dyn = find((lead_lag_incidence[1,:] .> 0) | (lead_lag_incidence[3,:] .> 0))
-    n_static = length(i_static)
-    i_bkwrd = find((lead_lag_incidence[1,:] .> 0) & (lead_lag_incidence[3,:] .== 0))
-    i_bkwrd_b = find((lead_lag_incidence[1,:] .> 0))
-    i_bkwrd_ns = find(lead_lag_incidence[1,i_dyn] .> 0)
-    p_bkwrd = squeeze(lead_lag_incidence[1,i_bkwrd],1)
-    p_bkwrd_b = squeeze(lead_lag_incidence[1,i_bkwrd_b],1)
-    n_bkwrd = length(i_bkwrd)
-    i_fwrd = find((lead_lag_incidence[3,:] .> 0) & (lead_lag_incidence[1,:] .== 0)) 
-    i_fwrd_b = find((lead_lag_incidence[3,:] .> 0)) 
-    i_fwrd_ns = find(lead_lag_incidence[3,i_dyn] .> 0)
-    p_fwrd = squeeze(lead_lag_incidence[3,i_fwrd],1)
-    p_fwrd_b = squeeze(lead_lag_incidence[3,i_dyn[i_fwrd_ns]],1)
-    n_fwrd = length(i_fwrd)
-    i_both = find((lead_lag_incidence[1,:] .> 0) & (lead_lag_incidence[3,:] .> 0)) 
-    p_both_b = squeeze(lead_lag_incidence[1,i_both],1)
-    p_both_f = squeeze(lead_lag_incidence[3,i_both],1)
-    n_both = length(i_both)
-    junk,i_cur_fwrd,p_cur_fwrd = findnz(lead_lag_incidence[2,i_fwrd])
-    n_cur_fwrd = length(i_cur_fwrd)
-    junk, i_cur_bkwrd, p_cur_bkwrd = findnz(lead_lag_incidence[2,i_bkwrd])
-    n_cur_bkwrd = length(i_cur_bkwrd)
-    junk, i_cur_both, p_cur_both = findnz(lead_lag_incidence[2,i_both])
-    n_cur_both = length(i_cur_both)
-    i_current = find(lead_lag_incidence[2,i_dyn] .> 0 )
-    p_current = squeeze(lead_lag_incidence[2,i_dyn[i_current]],1)
-    icolsD = [1:n_cur_bkwrd; n_bkwrd+n_both+(1:(n_fwrd+n_both))]
-    jcolsD = [p_cur_bkwrd; p_fwrd; p_both_f]
-    # derivatives of current values of variables that are both
-    # forward and backward are included in the E matrix
-    icolsE = [1:(n_bkwrd+n_both); n_bkwrd+n_both+(1:(n_fwrd+n_both))]
-    jcolsE = [p_bkwrd; p_both_b; p_cur_fwrd; p_cur_both]
-    colsUD = n_bkwrd+(1:n_both)
-    colsUE = n_both + n_fwrd + colsUD
-    n_dyn = endo_nbr - n_static + n_both
-    DErows1 = 1:(n_dyn-n_both)
-    DErows2 = (n_dyn-n_both)+(1:n_both)
-    gx_rows = n_bkwrd + n_both + (1:(n_fwrd+n_both))
-    hx_rows = 1:(n_bkwrd + n_both)          
-    Model(endo_nbr,lead_lag_incidence,n_static,n_fwrd,n_bkwrd,n_both,DErows1,DErows2,
-          n_dyn,i_static,i_dyn,i_bkwrd,i_bkwrd_b,i_bkwrd_ns,i_current,i_fwrd,i_fwrd_b,i_fwrd_ns,i_both,p_static,
-          p_bkwrd,p_bkwrd_b,p_current,p_fwrd,p_fwrd_b,p_both_b,p_both_f,
-          icolsD,jcolsD,icolsE,jcolsE,colsUD,colsUE,i_cur_fwrd)                  
-end
-    
+import Base.LinAlg.BLAS: gemm!
+
 type FirstOrderSolverWS
     jacobian_static::Array{Float64,2} 
     qr_ws::QrWS
     solver_ws::Union{GsSolverWS,CycleReductionWS}
-
+    ghx::StridedMatrix{Float64}
+    gx::Array{Float64,2}
+    hx::Array{Float64,2}
+    temp1::Array{Float64,2}
+    temp2::Array{Float64,2}
+    temp3::Array{Float64,2}
+    temp4::Array{Float64,2}
+    B10::Array{Float64,2}
+    B11::Array{Float64,2}
+    linsolve_ws::LinSolveWS
+    
     function FirstOrderSolverWS(algo, jacobian, m)
         if m.n_static > 0
             jacobian_static = Array{Float64,2}(m.endo_nbr,m.n_static)
             qr_ws = QrWS(jacobian_static)
         end
-        D, E = get_DE(jacobian[m.n_static+1:end,:],m)
         if algo == "GS"
+            D = zeros(m.n_dyn,m.n_dyn)
+            E = zeros(m.n_dyn,m.n_dyn)
             solver_ws = GsSolverWS(m,D,E)
         elseif algo == "CR"
-            solver_ws = CycleReductionWS(m)
+            n = m.endo_nbr - m.n_static
+            solver_ws = CycleReductionWS(n)
         end
-        new(jacobian_static,qr_ws,solver_ws)
+        ghx = Array(Float64,m.endo_nbr,m.n_bkwrd+m.n_both)
+        gx = Array(Float64,m.n_fwrd+m.n_both,m.n_bkwrd+m.n_both)
+        hx = Array(Float64,m.n_bkwrd+m.n_both,m.n_bkwrd+m.n_both)
+        temp1 = Array(Float64,m.n_static,m.n_fwrd+m.n_both)
+        temp2 = Array(Float64,m.n_static,m.n_bkwrd+m.n_both)
+        temp3 = Array(Float64,m.n_static,m.n_bkwrd+m.n_both)
+        temp4 = Array(Float64,m.endo_nbr - m.n_static,m.n_bkwrd+m.n_both)
+        B10 = Array(Float64,m.n_static,m.n_static)
+        B11 = Array(Float64,m.n_static,length(m.p_current))
+        linsolve_ws = LinSolveWS(m.n_static)
+        
+        new(jacobian_static,qr_ws,solver_ws,ghx,gx,hx,temp1,temp2,temp3,temp4,B10,B11,linsolve_ws)
     end
 end
         
-function get_ABC!(jacobian,model,A,B,C)
-    A[:,model.i_bkwrd_ns] = jacobian[:,model.p_bkwrd_b]
-    B[:,model.i_current] = jacobian[:,model.p_current]
-    C[:,model.i_fwrd_ns] = jacobian[:,model.p_fwrd_b]
-    return A, B, C
-end
-
 function remove_static(ws,jacobian,p_static)
-    n = length(p_static)
-    for i=1:n
-        ws.jacobian_static[:,i] = jacobian[:,p_static[i]]
-    end
+    #    n = length(p_static)
+    #    for i=1:n
+    #        ws.jacobian_static[:,i] = jacobian[:,p_static[i]]
+#    end
+    ws.jacobian_static[:,:] = view(jacobian,:,p_static)
     dgeqrf_core!(ws.qr_ws,ws.jacobian_static)
     dormrqf_core!(ws.qr_ws,Ref{UInt8}('L'),Ref{UInt8}('T'),ws.jacobian_static,
                       jacobian)
@@ -137,50 +75,49 @@ function get_DE(jacobian,model)
     return D, E
 end
 
-function add_static(ghx,gx,hx,A,B,C,jacobian,model)
-    temp = - jacobian[1:model.n_static,model.p_fwrd_b]*gx*hx
-    B10 = jacobian[1:model.n_static, model.p_static]
-    B11 = jacobian[1:model.n_static, model.p_current]
-    temp = temp - jacobian[1:model.n_static,model.p_bkwrd_b]
-    temp = B10\(temp-B11*ghx[model.i_dyn,:])
-    ghx[model.i_static,:] = temp
-    return ghx
+function add_static(ws::FirstOrderSolverWS,jacobian::Array{Float64,2},model::Model)
+    i_static = 1:model.n_static
+    #    temp = - jacobian[i_static,model.p_fwrd_b]*gx*hx
+    ws.temp1 = view(jacobian,i_static,model.p_fwrd_b)
+    gemm!('N','N',1.0,ws.temp1,ws.gx,0.0,ws.temp2)
+    gemm!('N','N',-1.0,ws.temp2,ws.hx,0.0,ws.temp3)
+    ws.B10 = view(jacobian,i_static, model.p_static)
+    ws.B11 = view(jacobian,i_static, model.p_current)
+    ws.temp3 -= view(jacobian,i_static,model.p_bkwrd_b)
+    for i=1:size(ws.ghx,2)
+        for j=1:length(model.i_dyn)
+            ws.temp4[j,i] = ws.ghx[model.i_dyn[j],i]
+        end
+    end
+    gemm!('N','N',-1.0,ws.B11,ws.temp4,1.0,ws.temp3)
+    linsolve_core!(ws.linsolve_ws,Ref{UInt8}('N'),ws.B10,ws.temp3)
+    ws.ghx[model.i_static,:] = ws.temp3
 end
 
 function first_order_solver(ws,algo, jacobian, model, options)
-    model = Model(model.endo_nbr,model.lead_lag_incidence)
     if model.n_static > 0
         remove_static(ws,jacobian,model.p_static)
     end
     n = model.n_fwrd + model.n_bkwrd + model.n_both
-    A = zeros(n,n)
-    B = zeros(n,n)
-    C = zeros(n,n)
-    A, B, C = get_ABC!(jacobian[model.n_static+1:end,:],model,A,B,C)
     if algo == "CR"
-        A, info = cycle_reduction_core(ws.solver_ws,A,B,C,options.cycle_reduction.tol,100)
-        if info[1] > 0
+        get_ABC!(ws.solver_ws,model,jacobian)
+        cycle_reduction_core!(ws.solver_ws,options.cycle_reduction.tol,100)
+        if ws.solver_ws.info[1] > 0
             error("CR didn't converge")
         end
-        ghx = zeros(model.endo_nbr,model.n_bkwrd+model.n_both)
-        tmp = zeros(model.endo_nbr,model.endo_nbr)
-        k = sort(union(model.i_bkwrd, model.i_fwrd,model.i_both))
-        tmp[k,k] = A
-        k1 = sort(union(model.i_bkwrd, model.i_both))
-        ghx = tmp[:,k1]
-        gx = ghx[k1,:]
-        hx = ghx[sort(union(model.i_fwrd,model.i_both)),:]
+        ws.ghx[model.i_dyn,:] = view(ws.solver_ws.A,:,model.i_bkwrd_ns)
+        ws.gx[:,:] = view(ws.ghx,model.gx_rows,:)
+        ws.hx[:,:] = view(ws.ghx,model.hx_rows,:)
     elseif algo == "GS"
         D, E = get_DE(jacobian[model.n_static+1:end,:],model)
         gs_solver_core!(ws.solver_ws,D,E,model,options.generalized_schur.criterium)
-        ghx = ws.solver_ws.ghx
-        gx = ws.solver_ws.gx
-        hx = ws.solver_ws.hx
+        ws.ghx = ws.solver_ws.ghx
+        ws.gx = ws.solver_ws.gx
+        ws.hx = ws.solver_ws.hx
     end
     if model.n_static > 0
-        ghx = add_static(ghx,gx,hx,A,B,C,jacobian,model)
+        add_static(ws,jacobian,model)
     end
-    ghx, gx, hx
 end
 
-    
+end    
