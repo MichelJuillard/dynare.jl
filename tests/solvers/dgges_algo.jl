@@ -109,7 +109,7 @@ function dgges_core!(ws::DggesWS,A::StridedMatrix{Float64}, B::StridedMatrix{Flo
           ws.beta, ws.vsl, ws.ldvsl, ws.vsr,
           ws.ldvsr, ws.work, ws.lwork, ws.bwork,
           ws.info)
-    ws.eigen_values = complex(ws.alphar,ws.alphai)./ws.beta
+    ws.eigen_values = complex.(ws.alphar,ws.alphai)./ws.beta
     chklapackerror(ws.info[])
 end
 
