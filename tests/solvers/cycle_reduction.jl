@@ -1,139 +1,102 @@
-module cycle_reduction
+module CycleReduction
 
 using model
 using linsolve_algo
 
 import Base.LinAlg.BLAS: scal!, gemm!
 
-export CycleReductionWS, cycle_reduction_core!, get_ABC!
+export CycleReductionWS, cycle_reduction_core!
 
 type CycleReductionWS
     linsolve_ws::LinSolveWS
-    A::Array{Float64,2}
-    B::Array{Float64,2}
-    C::Array{Float64,2}
-    Ahat1::Array{Float64,2}
-    Bcopy::Array{Float64,2}
-    tmp::Array{Float64,2}
-    tmp_00::SubArray{Float64,2,Array{Float64,2},Tuple{UnitRange{Int64},UnitRange{Int64}},false}
-    tmp_02::SubArray{Float64,2,Array{Float64,2},Tuple{UnitRange{Int64},UnitRange{Int64}},false}
-    tmp_20::SubArray{Float64,2,Array{Float64,2},Tuple{UnitRange{Int64},UnitRange{Int64}},false}
-    tmp_22::SubArray{Float64,2,Array{Float64,2},Tuple{UnitRange{Int64},UnitRange{Int64}},false}
-    tmp1::Array{Float64,2}
-    A0::SubArray{Float64,2,Array{Float64,2},Tuple{UnitRange{Int64},UnitRange{Int64}},false}
-    A2::SubArray{Float64,2,Array{Float64,2},Tuple{UnitRange{Int64},UnitRange{Int64}},false}
-    tmp2::Array{Float64,2}
-    tmp2_1::SubArray{Float64,2,Array{Float64,2},Tuple{UnitRange{Int64},UnitRange{Int64}},false}
-    tmp2_2::SubArray{Float64,2,Array{Float64,2},Tuple{UnitRange{Int64},UnitRange{Int64}},false}
+    ahat1::Array{Float64,2}
+    a1copy::Array{Float64,2}
+    m::Array{Float64,2}
+    m00::SubArray{Float64,2,Array{Float64,2},Tuple{UnitRange{Int64},UnitRange{Int64}},false}
+    m02::SubArray{Float64,2,Array{Float64,2},Tuple{UnitRange{Int64},UnitRange{Int64}},false}
+    m20::SubArray{Float64,2,Array{Float64,2},Tuple{UnitRange{Int64},UnitRange{Int64}},false}
+    m22::SubArray{Float64,2,Array{Float64,2},Tuple{UnitRange{Int64},UnitRange{Int64}},false}
+    m1::Array{Float64,2}
+    m1_1::SubArray{Float64,2,Array{Float64,2},Tuple{UnitRange{Int64},UnitRange{Int64}},false}
+    m1_2::SubArray{Float64,2,Array{Float64,2},Tuple{UnitRange{Int64},UnitRange{Int64}},false}
+    m2::Array{Float64,2}
     info::Array{Int64,1}
 
-    function CycleReductionWS(n,A,B,C)
+    function CycleReductionWS(n)
         linsolve_ws = LinSolveWS(n)
-        Ahat1 = Array(Float64,n,n)
-	Bcopy = Array(Float64,n,n)
-        tmp = Array(Float64,2*n,2*n)
-        tmp_00 = view(tmp,1:n,1:n)
-        tmp_02 = view(tmp,1:n,n+(1:n))
-        tmp_20 = view(tmp,n+(1:n),1:n)
-        tmp_22 = view(tmp,n+(1:n),n+(1:n))
-        tmp1 = Array(Float64,n,2*n)
-        A0 = view(tmp1,1:n,1:n)
-        A2 = view(tmp1,1:n,n+(1:n))
-        tmp2 = Array(Float64,2*n,n)
-        tmp2_1 = view(tmp2,1:n,1:n)
-        tmp2_2 = view(tmp2,n+(1:n),1:n)
+        ahat1 = Array(Float64,n,n)
+	a1copy = Array(Float64,n,n)
+        m = Array(Float64,2*n,2*n)
+        m00 = view(m,1:n,1:n)
+        m02 = view(m,1:n,n+(1:n))
+        m20 = view(m,n+(1:n),1:n)
+        m22 = view(m,n+(1:n),n+(1:n))
+        m1 = Array(Float64,n,2*n)
+        m1_a0 = view(m1,1:n,1:n)
+        m1_a2 = view(m1,1:n,n+(1:n))
+        m2 = Array(Float64,2*n,n)
+        m1_a0 = view(m2,1:n,1:n)
+        m1_a2 = view(m2,1:n,n+(1:n))
         info = [0;0]
-        new(linsolve_ws,A,B,C,Ahat1,Bcopy,tmp, tmp_00, tmp_02, tmp_20, tmp_22, tmp1, A0, A2, tmp2, tmp2_1, tmp2_2, info) 
+        new(linsolve_ws,ahat1,a1copy,m, m00, m02, m20, m22, m1, a0, a2, m2, info) 
     end
 end
 
-function CycleReductionWS(n)
-    A = zeros(Float64,n,n)
-    B = zeros(Float64,n,n)
-    C = zeros(Float64,n,n)
-    CycleReductionWS(n,A,B,C)
-end	
-
-function get_ABC!(ws::CycleReductionWS,model::Model,jacobian::Array{Float64})
-    i_rows = model.n_static+1:model.endo_nbr
-    ws.A[:,model.i_bkwrd_ns] = view(jacobian,i_rows,model.p_bkwrd_b)
-    ws.B[:,model.i_current]  = view(jacobian,i_rows,model.p_current)
-    ws.C[:,model.i_fwrd_ns]  = view(jacobian,i_rows,model.p_fwrd_b)
-end
-
-function cycle_reduction_core!(ws::CycleReductionWS, cvg_tol::Float64, max_it::Int64)
-    n = size(ws.A,1)
+function cycle_reduction!(x::Array{Float64},a0::Array{Float64},a1::Array{Float64},a2::Array{Float64},ws::CycleReductionWS, cvg_tol::Float, max_it::Int)
+    n = size(a0,1)
+    n2 = n*n
     it = 0
 
-    copy!(ws.Ahat1,1,ws.B,1,length(ws.B))
-    @inbounds ws.tmp1[:,1:n] = ws.A
-    @inbounds ws.tmp1[:,n+(1:n)] = ws.C
-    @inbounds ws.tmp2[1:n,:] = ws.A
-    @inbounds ws.tmp2[n+(1:n),:] = ws.C
+    copy!(x,a0)
+    copy!(ws.ahat1,1,B,1,length(a1))
+    @inbounds ws.m1_a0 = a0
+    @inbounds ws.m1_a2 = a2
+    @inbounds ws.m2_a0 = a0
+    @inbounds ws.m2_a2 = a2
     while true
-        #        ws.tmp = ([A0; A2]/A1)*[A0 A2]
-	copy!(ws.Bcopy,ws.B)
-        linsolve_core!(ws.linsolve_ws,Ref{UInt8}('N'),ws.Bcopy,ws.tmp1)
-        gemm!('N','N',-1.0,ws.tmp2,ws.tmp1,0.0,ws.tmp)
-        for j=1:n
-            @simd for i=1:n
-                @inbounds ws.B[i,j] += ws.tmp_02[i,j] + ws.tmp_20[i,j]
-            end
+        #        ws.m = [a0; a2]*(a1\[a0 a2])
+	copy!(ws.a1copy,a1)
+        linsolve_core!(ws.linsolve_ws,Ref{UInt8}('N'),ws.a1copy,ws.m1)
+        gemm!('N','N',-1.0,ws.m2,ws.m1,0.0,ws.m)
+        @simd for i=1:n2
+            @inbounds a1[i] += ws.m02[i] + ws.m20[i]
         end
-        @inbounds ws.tmp1[:,1:n] = ws.tmp_00
-        @inbounds ws.tmp1[:,n+(1:n)] = ws.tmp_22
-        @inbounds ws.tmp2[1:n,:] = ws.tmp_00
-        @inbounds ws.tmp2[n+(1:n),:] = ws.tmp_22
-        for j=1:n
-            @simd for i=1:n
-                @inbounds ws.Ahat1[i,j] += ws.tmp_20[i,j]
-            end
+        @inbounds ws.m1_a0 += ws.m00
+        @inbounds ws.m1_a2 += ws.m22
+        @inbounds ws.m2_a0 = ws.m1_a0
+        @inbounds ws.m2_a2 = ws.m1_a2
+        @simd for i=1:n
+            @inbounds ws.ahat1[i] += ws.m20[i]
         end
-        crit = norm(ws.A0,1)
+        crit = norm(ws.m1_a0,1)
         if crit < cvg_tol
-	   # keep iterating until condition on A2 is met
-            if norm(ws.A2,1) < cvg_tol
+	   # keep iterating until condition on ws.m1_a2 is met
+            if norm(ws.m1_a2,1) < cvg_tol
                 break
             end
         elseif isnan(crit) || it == max_it
             if crit < cvg_tol
                 ws.info[1] = 4
-                ws.info[2] = log(norm(A2,1))
+                ws.info[2] = log(norm(ws.m1_a2,1))
             else
                 ws.info[1] = 3
-                ws.info[2] = log(norm(A1,1))
+                ws.info[2] = log(norm(ws.m1_a1,1))
             end
             return
         end        
         it += 1
     end
-    #(ws.Ahat1\ws.A
-    linsolve_core!(ws.linsolve_ws,Ref{UInt8}('N'),ws.Ahat1,ws.A)
-    scal!(length(ws.A),-1.0,ws.A,1)
+    linsolve_core!(ws.linsolve_ws,Ref{UInt8}('N'),ws.ahat1,x)
+    scal!(length(x),-1.0,x,1)
 
 end
 
-function cycle_reduction_check(X::Array{Float64,2},A0::Array{Float64,2}, A1::Array{Float64,2}, A2::Array{Float64,2},cvg_tol::Float64)
-    res = A0 + A1*X + A2*X*X
+function cycle_reduction_check(x::Array{Float64,2},a0::Array{Float64,2}, a1::Array{Float64,2}, a2::Array{Float64,2},cvg_tol::Float64)
+    res = a0 + a1*x + A2*x*x
     if (sum(sum(abs.(res))) > cvg_tol)
         print("the norm of the residuals, ", res, ", compared to the tolerance criterion ",cvg_tol)
     end
     nothing
 end
-    
-#function cycle_reduction(A0, A1, A2, cvg_tol = 1e-8, maxit = 300, check = false)
-#    n,m = size(A0)
-#    if check
-#        A0_0 = A0
-#        A1_0 = A1
-#        A2_0 = A2
-#    end
-#    id0, id2, A0_0, Ahat1, tmp = cycle_reduction_init(n)
-#    info = cycle_reduction_core(A0, A1, A2, cvg_tol, maxit, A0_0, Ahat1, tmp, id0, id2)
-#    if check
-#        cycle_reduction_check(A0,A0_0,A1_0,A2_0,cvg_tol)
-#    end
-#    return A0, info
-#end
-
+     
 end

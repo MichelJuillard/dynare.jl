@@ -12,7 +12,7 @@ type LinSolveWS
     end
 end
 
-function linsolve_core!(ws::LinSolveWS,trans::Ref{UInt8},a::StridedMatrix{Float64},b::StridedMatrix{Float64})
+function linsolve_core!(ws::LinSolveWS,trans::Ref{UInt8},a::StridedMatrix{Float64},b::StridedVecOrMat{Float64})
     mm,nn = size(a)
     m = Ref{BlasInt}(mm)
     n = Ref{BlasInt}(nn)

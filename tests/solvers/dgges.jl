@@ -1,10 +1,12 @@
 # general Schur decomposition with reordering
 # adataped from ./base/linalg/lapack.jl
 
+include("exceptions.jl")
+
 module DGGES
 
 import Base: USE_BLAS64
-export DggesWS, dgges!
+export DgeesWS, dgees!, DggesWS, dgges!
 
 const liblapack = Base.liblapack_name
 
@@ -90,6 +92,12 @@ end
 
 const criterium = 1+1e-6
 
+function mycompare{T}(wr_::Ptr{T}, wi_::Ptr{T})
+    wr = unsafe_load(wr_)
+    wi = unsafe_load(wi_)
+    return convert(Cint, ((wr * wr + wi * wi) < criterium) ? 1 : 0)
+end
+
 function mycompare{T}(alphar_::Ptr{T}, alphai_::Ptr{T}, beta_::Ptr{T})
     alphar = unsafe_load(alphar_)
     alphai = unsafe_load(alphai_)
@@ -97,7 +105,90 @@ function mycompare{T}(alphar_::Ptr{T}, alphai_::Ptr{T}, beta_::Ptr{T})
     return convert(Cint, ((alphar * alphar + alphai * alphai) < criterium * beta * beta) ? 1 : 0)
 end
 
-const mycompare_c = cfunction(mycompare, Cint, (Ptr{Cdouble}, Ptr{Cdouble}, Ptr{Cdouble}))
+const mycompare_c = cfunction(mycompare, Cint, (Ptr{Cdouble}, Ptr{Cdouble}))
+const mycompare_g_c = cfunction(mycompare, Cint, (Ptr{Cdouble}, Ptr{Cdouble}, Ptr{Cdouble}))
+
+type DgeesWS
+    jobvs::Ref{UInt8}
+    sdim::Ref{BlasInt}
+    wr::Array{Float64,1}
+    wi::Array{Float64,1}
+    ldvs::Ref{BlasInt}
+    vs::Array{Float64,2}
+    work::Array{Float64,1}
+    lwork::Ref{BlasInt}
+    bwork::Array{Int64,1}
+    eigen_values::Array{Complex{Float64},1}
+    info::Ref{BlasInt}
+
+    function DgeesWS(jobvs::Ref{UInt8}, A::StridedMatrix{Float64}, sdim::Ref{BlasInt},
+                      wr::Array{Float64,1}, wi::Array{Float64,1}, ldvs::Ref{BlasInt}, vs::Array{Float64,2},
+                      work::Array{Float64,1}, lwork::Ref{BlasInt}, bwork::Array{Int64,1},
+                      eigen_values::Array{Complex{Float64},1}, info::Ref{BlasInt})
+        n = Ref{BlasInt}(size(A,1))
+        RldA = Ref{BlasInt}(max(1,stride(A,2)))
+        Rsort = Ref{UInt8}('N')
+        ccall((@blasfunc(dgees_), liblapack), Void,
+              (Ref{UInt8}, Ref{UInt8}, Ptr{Void},
+               Ref{BlasInt}, Ptr{Float64}, Ref{BlasInt},
+               Ptr{BlasInt}, Ptr{Float64},
+               Ptr{Float64}, Ptr{Float64}, Ref{BlasInt},
+               Ptr{Float64}, Ref{BlasInt}, Ptr{Int64},
+               Ref{BlasInt}),
+              jobvs, Rsort, mycompare_c,
+              n, A, RldA, 
+              sdim, wr, wi,
+              vs, ldvs,
+              work, lwork, bwork,
+              info)
+        chklapackerror(info[])
+        lwork = Ref{BlasInt}(real(work[1]))
+        work = Array{Float64}(lwork[])
+#        eigen_values = Array{Complex{Float64}}(n[])
+        new(jobvs, sdim, wr, wi, ldvs, vs, work, lwork, bwork, eigen_values, info)
+    end
+
+end
+
+
+function DgeesWS(A::StridedMatrix{Float64})
+    chkstride1(A)
+    n, = checksquare(A)
+    jobvs = Ref{UInt8}('V')
+    sdim = Ref{BlasInt}(0)
+    wr = Array(Float64, n)
+    wi = Array(Float64, n)
+    ldvs = Ref{BlasInt}(jobvs[] == UInt32('V') ? n : 1)
+    vs = Array(Float64, ldvs[], n)
+    work = Array(Float64,1)
+    lwork = Ref{BlasInt}(-1)
+    bwork = Array(Int64,n)
+    eigen_values = Array(Complex{Float64}, n)
+    info = Ref{BlasInt}(0)
+    DgeesWS(jobvs, A, sdim, wr, wi, ldvs, vs, work, lwork, bwork, eigen_values, info)
+
+end
+    
+function dgees!(ws::DgeesWS,A::StridedMatrix{Float64})
+    n = Ref{BlasInt}(size(A,1))
+    RldA = Ref{BlasInt}(max(1,stride(A,2)))
+    sort = Ref{UInt8}('S')
+    ccall((@blasfunc(dgees_), liblapack), Void,
+          (Ref{UInt8}, Ref{UInt8}, Ptr{Void},
+           Ref{BlasInt}, Ptr{Float64}, Ref{BlasInt},
+           Ref{BlasInt}, Ptr{Float64}, Ptr{Float64},
+           Ptr{Float64}, Ref{BlasInt},
+           Ptr{Float64}, Ref{BlasInt}, Ptr{Int64},
+           Ref{BlasInt}),
+          ws.jobvs, sort, mycompare_c,
+          n, A, RldA,
+          ws.sdim, ws.wr, ws.wi,
+          ws.vs, ws.ldvs,
+          ws.work, ws.lwork, ws.bwork,
+          ws.info)
+    ws.eigen_values = complex.(ws.wr, ws.wi)
+    chklapackerror(ws.info[])
+end
 
 type DggesWS
     alphar::Array{Float64,1}
@@ -107,7 +198,7 @@ type DggesWS
     work::Array{Float64,1}
     bwork::Array{Int64,1}
     sdim::BlasInt
-    info::BlasInt
+
     function DggesWS(A,B)
         chkstride1(A, B)
         n, m = checksquare(A, B)
@@ -145,7 +236,7 @@ type DggesWS
         chklapackerror(info)
         lwork = BlasInt(real(work[1]))
         work = Array{Float64}(lwork)
-        new(alphar,alphai,beta,lwork,work,bwork,sdim,info)
+        new(alphar,alphai,beta,lwork,work,bwork,sdim)
     end
 end
 
@@ -172,11 +263,13 @@ function dgges!(jobvsl::Char, jobvsr::Char, A::StridedMatrix{Float64}, B::Stride
           ldvsr, ws.work, ws.lwork, ws.bwork,
           info)
     ws.sdim = sdim[]
-    ws.info = info[]
-
+    if info[]
+        throw(DggesException(info[]))
+    end
     for i in 1:n
         eigval[i] = complex(ws.alphar[i],ws.alphai[i])/ws.beta[i]
     end
 end
 
 end
+

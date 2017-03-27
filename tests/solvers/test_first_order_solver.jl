@@ -2,7 +2,7 @@ include("make_model.jl")
 include("first_order_solver.jl")
 using Base.Test
 using MAT
-using FirstOrder: Model, FirstOrderSolverWS, remove_static, get_DE, first_order_solver
+using FirstOrder: Model, FirstOrderSolverWS, remove_static!, get_de, first_order_solver
 
 type Cycle_Reduction
     tol
@@ -43,9 +43,9 @@ end
 function test_getDE(endo_nbr,lead_lag_incidence,jacobian)
     m = Model(endo_nbr,lead_lag_incidence)
     ws = FirstOrderSolverWS("GS", jacobian, m)
-    remove_static(ws,jacobian,m.p_static)
+    remove_static!(ws,jacobian,m.p_static)
     @test norm(jacobian[m.n_static+1:end,m.p_static] - zeros(m.endo_nbr-m.n_static,m.n_static),Inf) < 1e-15
-    D,E = get_DE(jacobian[m.n_static+1:end,:],m)
+    D,E = get_de(jacobian[m.n_static+1:end,:],m)
     Dtarget = zeros(6,6)
     Dtarget[1:5,[1, 2, 4, 5, 6]] = jacobian[2:6,[6, 7, 10, 11, 12]]
     Dtarget[6,3] = 1
@@ -57,12 +57,12 @@ end
 function test_solver(endo_nbr,lead_lag_incidence,options,algo,jacobian)
     m = Model(endo_nbr,lead_lag_incidence)
     ws = FirstOrderSolverWS(algo, jacobian, m)
-    remove_static(ws,jacobian,m.p_static)
+    remove_static!(ws,jacobian,m.p_static)
     @test size(jacobian) == (6,12)
     println("small model first round")
     first_order_solver(ws,algo, jacobian, m, options)
     println("small model second round")
-    first_order_solver(ws,algo, jacobian, m, options)
+    @time first_order_solver(ws,algo, jacobian, m, options)
     res = norm(ws.ghx-oo_["dr"]["ghx"][squeeze(round(Int,oo_["dr"]["inv_order_var"]),2),:],Inf)
     @test res < 1e-13
 end
@@ -74,19 +74,19 @@ function solve_large_model(endo_nbr,lead_lag_incidence,options,algo,jacobian)
 end    
 
 lli, jacobian = make_model(1)
-#test_model(6,lli)
-#test_getDE(6, lli, jacobian)
-#test_solver(6, lli, options, "CR", jacobian)
+test_model(6,lli)
+test_getDE(6, lli, jacobian)
+test_solver(6, lli, options, "CR", jacobian)
+test_solver(6, lli, options, "GS", jacobian)
 
-n = 1
+n = 100
 lli2, jacobian2 = make_model(n)
 println("large model")
+solve_large_model(n*6,lli2,options,"CR",jacobian2)
+solve_large_model(n*6,lli2,options,"CR",jacobian2)
+println("OK")
 solve_large_model(n*6,lli2,options,"GS",jacobian2)
 solve_large_model(n*6,lli2,options,"GS",jacobian2)
-#println("OK")
-#solve_large_model(n*6,lli2,options,"CR",jacobian2)
-#@time test_solver(6, lli, options, "GS", jacobian)
-#@time solve_large_model(n*6,lli2,options,"GS",jacobian2)
 
 
 
