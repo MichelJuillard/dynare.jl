@@ -20,10 +20,11 @@ A_rdiv_B!(B,A)
 @test B ≈ inv(Aorig)
 
 srand(123)
-a = randn(7,7)
+n = 7
+a = randn(n,n)
 S = schur(a)
 t = S[1]
-b = randn(7,7)
+b = randn(n,n)
 
 @test t*b ≈ A_mul_B!(QuasiUpperTriangular(t),b)
 @test t'*b ≈ At_mul_B!(QuasiUpperTriangular(t),b)
@@ -31,7 +32,7 @@ b = randn(7,7)
 @test b*t' ≈ A_mul_Bt!(b,QuasiUpperTriangular(t))
 
 b1 = copy(b)
-x = zeros(7,7)
+x = zeros(n,n)
 A_ldiv_B!(QuasiUpperTriangular(t),b1)
 @test t\b ≈ b1
 b1 = copy(b)
@@ -40,3 +41,23 @@ A_rdiv_B!(b1,QuasiUpperTriangular(t))
 b1 = copy(b)
 A_rdiv_Bt!(b1,QuasiUpperTriangular(t))
 @test b/t.' ≈ b1
+
+b = rand(n)
+b1 = copy(b)
+r = rand()
+I_plus_rA_ldiv_B!(r,QuasiUpperTriangular(t),b1)
+@test b1 ≈ (eye(n) + r*t)\b
+b1 = copy(b)
+s = rand()
+I_plus_rA_plus_sB_ldiv_C!(r,s,QuasiUpperTriangular(t),QuasiUpperTriangular(t*t),b1)
+@test b1 ≈ (eye(n) + r*t + s*t*t)\b
+
+b = rand(n,n)
+b1 = copy(b)
+r = rand()
+I_plus_rA_ldiv_B!(r,QuasiUpperTriangular(t),b1)
+@test b1 ≈ (eye(n) + r*t)\b
+b1 = copy(b)
+s = rand()
+I_plus_rA_plus_sB_ldiv_C!(r,s,QuasiUpperTriangular(t),QuasiUpperTriangular(t*t),b1)
+@test b1 ≈ (eye(n) + r*t + s*t*t)\b
