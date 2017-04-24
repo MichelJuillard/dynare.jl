@@ -21,7 +21,7 @@ function mult_kron_transposed!(t,depth,x)
 end
     
 """
-    mult_level!(level::Int64, t::QuasiUpperTriangular, x::AbstractVector, depth::Int64)
+    mult_level!(p::Int64, q::Int64, t::QuasiUpperTriangular, x::AbstractVector)
 
 Performs (I_p ⊗ t ⊗ I_q) 
 """
@@ -51,9 +51,9 @@ function mult_level!(p::Int64, q::Int64, t::QuasiUpperTriangular, x::AbstractVec
 end
         
 """
-    mult_level_t!(level::Int64, t::QuasiUpperTriangular, x::AbstractVector, depth::Int64)
+    mult_level_t!(p::Int64, q::Int64, t::QuasiUpperTriangular, x::AbstractVector)
 
-Performs (I_p ⊗ t^T ⊗ I_q) 
+Performs (I_p ⊗ t^T ⊗ I_q)*x 
 """
 function mult_level_t!(p::Int64, q::Int64, t::QuasiUpperTriangular, x::AbstractVector)
     n = size(t,2)
