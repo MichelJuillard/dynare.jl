@@ -54,12 +54,25 @@ function setindex!(A::QuasiUpperTriangular, x, i::Integer, j::Integer)
 end
 
 ## Generic quasi triangular multiplication
+function A_mul_B!(a::QuasiUpperTriangular,b::AbstractVector,work::AbstractVector)
+    if size(a,1) < 27
+        # pure Julia is faster
+        A_mul_B!(a,b)
+        return
+    end
+    copy!(work,b)
+    BLAS.trmv!('U','N','N',a.data,b)
+    @inbounds @simd for i= 2:size(a,1)
+        b[i] += a[i,i-1]*work[i-1]
+    end
+end
+
 function A_mul_B!(A::QuasiUpperTriangular, B::AbstractVector)
     m = length(B)
     if m != size(A, 1)
         throw(DimensionMismatch("right hand side B needs first dimension of size $(size(A,1)), has size $m"))
     end
-    Bi2 = A.data[1,1]*B[1]
+    @inbounds Bi2 = A.data[1,1]*B[1]
     @inbounds @simd for k = 2:m
         Bi2 += A.data[1,k]*B[k]
     end
@@ -68,11 +81,10 @@ function A_mul_B!(A::QuasiUpperTriangular, B::AbstractVector)
         @simd for k = i:m
             Bi1 += A.data[i,k]*B[k]
         end
-        B[i-1,] = Bi2
+        B[i-1] = Bi2
         Bi2 = Bi1
     end
     B[m] = Bi2
-    B
 end
 
 function At_mul_B!(A::QuasiUpperTriangular, B::AbstractVector)
