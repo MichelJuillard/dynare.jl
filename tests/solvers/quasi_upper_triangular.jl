@@ -1,12 +1,11 @@
 ## QuasiUpperTriangular Matrix of real numbers
 
-using Base.Test
-
 import Base.size
 import Base.similar
 import Base.getindex
 import Base.setindex!
 import Base.copy
+import Base.convert
 
 immutable QuasiUpperTriangular{T<:Real,S<:AbstractMatrix} <: AbstractMatrix{T}
     data::S
@@ -335,6 +334,10 @@ function A_mul_Bt!(A::AbstractMatrix, B::QuasiUpperTriangular)
     end
     A
 end
+
+A_mul_B!(c::AbstractMatrix,a::QuasiUpperTriangular,b::QuasiUpperTriangular) = A_mul_B!(c,a,Matrix(b))
+At_mul_B!(c::AbstractMatrix,a::QuasiUpperTriangular,b::QuasiUpperTriangular) = At_mul_B!(c,a,Matrix(b))
+A_mul_Bt!(c::AbstractMatrix,a::QuasiUpperTriangular,b::QuasiUpperTriangular) = A_mul_Bt!(c,a,Matrix(b))
 
 # solver by substitution
 function A_ldiv_B!(a::QuasiUpperTriangular, b::AbstractMatrix)
