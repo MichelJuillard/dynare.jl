@@ -156,7 +156,29 @@ function A_mul_Bt!(A::AbstractVector, B::QuasiUpperTriangular)
     A
 end
 
-function A_mul_B!(A::QuasiUpperTriangular, B::AbstractVecOrMat)
+function A_mul_B!(c::AbstractMatrix, a::QuasiUpperTriangular, b::AbstractMatrix)
+    A_mul_B!(c,1.0,a,b)
+    b
+end
+
+function A_mul_B!(c::AbstractMatrix, alpha::Float64, a::QuasiUpperTriangular, b::AbstractMatrix)
+    m, n = size(A)
+    if size(B, 1) != n
+        throw(DimensionMismatch("right hand side B needs first dimension of size $n, has size $(size(B,1))"))
+    end
+    copy!(c,b)
+    BLAS.trmm!('L','U','N','N',alpha,a.data,b)
+    n = size(a,1)
+    @inbounds for i= 2:n
+        x = a[i,i-1]
+        @simd for j=1:n
+            b[i,j] += x*c[i-1,j]
+        end
+    end
+    b
+end
+
+function A_mul_B!(A::QuasiUpperTriangular, B::AbstractMatrix)
     m, n = size(B, 1), size(B, 2)
     if m != size(A, 1)
         throw(DimensionMismatch("right hand side B needs first dimension of size $(size(A,1)), has size $m"))
@@ -179,7 +201,29 @@ function A_mul_B!(A::QuasiUpperTriangular, B::AbstractVecOrMat)
     B
 end
 
-function At_mul_B!(A::QuasiUpperTriangular, B::AbstractVecOrMat)
+function At_mul_B!(c::AbstractMatrix, a::QuasiUpperTriangular, b::AbstractMatrix)
+    At_mul_B!(c,1.0,a,b)
+    b
+end
+
+function At_mul_B!(c::AbstractMatrix, alpha::Float64, a::QuasiUpperTriangular, b::AbstractMatrix)
+    m, n = size(A)
+    if size(B, 1) != n
+        throw(DimensionMismatch("right hand side B needs first dimension of size $n, has size $(size(B,1))"))
+    end
+    copy!(c,b)
+    BLAS.trmm!('L','U','T','N',alpha,a.data,b)
+    n = size(a,1)
+    @inbounds for i= 1:n-1
+        x = a[i+1,i]
+        @simd for j=1:n
+            b[i,j] += x*c[i+1,j]
+        end
+    end
+    b
+end
+
+function At_mul_B!(A::QuasiUpperTriangular, B::AbstractMatrix)
     m, n = size(B, 1), size(B, 2)
     if m != size(A, 1)
         throw(DimensionMismatch("right hand side B needs first dimension of size $(size(A,1)), has size $m"))
@@ -200,6 +244,28 @@ function At_mul_B!(A::QuasiUpperTriangular, B::AbstractVecOrMat)
         B[1,j] = Bij2
     end
     B
+end
+
+function A_mul_B!(c::AbstractMatrix, a::AbstractMatrix, b::QuasiUpperTriangular)
+    A_mul_B!(c,1.0,a,b)
+    a
+end
+
+function A_mul_B!(c::AbstractMatrix, alpha::Float64, a::AbstractMatrix, b::QuasiUpperTriangular)
+    m, n = size(A)
+    if size(B, 1) != n
+        throw(DimensionMismatch("right hand side B needs first dimension of size $n, has size $(size(B,1))"))
+    end
+    copy!(c,a)
+    BLAS.trmm!('R','U','N','N',alpha,b.data,a)
+    n = size(a,1)
+    @inbounds for i= 2:n
+        x = b[i,i-1]
+        @simd for j=1:n
+            a[j,i-1] += x*c[j,i]
+        end
+    end
+    a
 end
 
 function A_mul_B!(A::AbstractMatrix, B::QuasiUpperTriangular)
@@ -223,6 +289,28 @@ function A_mul_B!(A::AbstractMatrix, B::QuasiUpperTriangular)
         A[i,1] = Aij2
     end
     A
+end
+
+function A_mul_Bt!(c::AbstractMatrix, a::AbstractMatrix, b::QuasiUpperTriangular)
+    A_mul_Bt!(c,1.0,a,b)
+    a
+end
+
+function A_mul_Bt!(c::AbstractMatrix, alpha::Float64, a::AbstractMatrix, b::QuasiUpperTriangular)
+    m, n = size(A)
+    if size(B, 1) != n
+        throw(DimensionMismatch("right hand side B needs first dimension of size $n, has size $(size(B,1))"))
+    end
+    copy!(c,a)
+    BLAS.trmm!('R','U','T','N',alpha,b.data,a)
+    n = size(a,1)
+    @inbounds for j= 2:n
+        x = b[j,j-1]
+        @simd for i=1:n
+            a[i,j] += x*c[i,j-1]
+        end
+    end
+    a
 end
 
 function A_mul_Bt!(A::AbstractMatrix, B::QuasiUpperTriangular)

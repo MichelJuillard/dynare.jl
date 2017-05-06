@@ -25,11 +25,17 @@ a = randn(n,n)
 S = schur(a)
 t = S[1]
 b = randn(n,n)
+c = similar(b)
 
 @test t*b ≈ A_mul_B!(QuasiUpperTriangular(t),b)
 @test t'*b ≈ At_mul_B!(QuasiUpperTriangular(t),b)
 @test b*t ≈ A_mul_B!(b,QuasiUpperTriangular(t))
 @test b*t' ≈ A_mul_Bt!(b,QuasiUpperTriangular(t))
+
+@test t*b ≈ A_mul_B!(c,QuasiUpperTriangular(t),b)
+@test t'*b ≈ At_mul_B!(c,QuasiUpperTriangular(t),b)
+@test b*t ≈ A_mul_B!(c,b,QuasiUpperTriangular(t))
+@test b*t' ≈ A_mul_Bt!(c,b,QuasiUpperTriangular(t))
 
 b1 = copy(b)
 x = zeros(n,n)
@@ -61,3 +67,4 @@ b1 = copy(b)
 s = rand()
 I_plus_rA_plus_sB_ldiv_C!(r,s,QuasiUpperTriangular(t),QuasiUpperTriangular(t*t),b1)
 @test b1 ≈ (eye(n) + r*t + s*t*t)\b
+
