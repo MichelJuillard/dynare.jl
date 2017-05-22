@@ -251,7 +251,6 @@ c_orig = copy(c)
 d_orig = copy(d)
 
 general_sylvester_solver!(a,b,c,d,2,ws)
-display(d)
 @test a_orig*d + b_orig*d*kron(c_orig,c_orig) ≈ d_orig
 @test d ≈ reshape((kron(eye(n2^order),a_orig) + kron(kron(c_orig',c_orig'),b_orig))\vec(d_orig),n1,n2^order)
 

@@ -52,18 +52,7 @@ function swap(a,b)
 end
 using Base.Test
 function general_sylvester_solver!(a,b,c,d,order,ws)
-    addr1 = pointer_from_objref(d)
-    x = (kron(eye(size(c,2)^order),a) + kron(kron(c',c'),b))\vec(d)
-    x = reshape(x,size(a,2),size(c,1)^order)
-    display(x)
-    @test a*x + b*x*kron(c,c) ≈ d
-    a_orig = copy(a)
-    b_orig = copy(b)
-    d_orig = copy(d)
     linsolve_core!(ws.linsolve_ws,Ref{UInt8}('N'),a,b,d)
-    @test b ≈ a_orig\b_orig
-    @test d ≈ a_orig\d_orig
-    @test x + b*x*kron(c,c) ≈ d
     dgees!(ws.dgees_ws_b,b)
     dgees!(ws.dgees_ws_c,c)
     t = QuasiUpperTriangular(b)
@@ -72,21 +61,13 @@ function general_sylvester_solver!(a,b,c,d,order,ws)
     A_mul_B!(ws.s2,s,s)
     result = reshape(ws.work1,size(t,2),size(s,1)^order)
     # do transpose in function
-    d_orig = copy(d)
     a_mul_b_kron_c!(result,ws.dgees_ws_b.vs',d,ws.dgees_ws_c.vs,order,ws.work2)
     copy!(d,ws.work1)
-    @test d ≈ ws.dgees_ws_b.vs'*d_orig*kron(ws.dgees_ws_c.vs,ws.dgees_ws_c.vs)
-    QC = kron(ws.dgees_ws_c.vs,ws.dgees_ws_c.vs)
-    @test ws.dgees_ws_b.vs'*x*QC + t*ws.dgees_ws_b.vs'*x*QC*kron(s,s) ≈ d
     d_vec = vec(d)
-    d_orig = copy(d)
     solve1!(1.0,order,t,ws.t2,s,ws.s2,d_vec,ws)
-    @test d + t*d*kron(s,s) ≈ d_orig
     # do transpose in function
     a_mul_b_kron_c!(result,ws.dgees_ws_b.vs,d,ws.dgees_ws_c.vs',order,ws.work2)
     copy!(d,result)
-    @test d ≈ x
-    println(addr1," ",pointer_from_objref(d))
 end
 
 
@@ -109,17 +90,9 @@ function solve1!(r,depth,t,t2,s,s2,d,ws)
         drange2 = 1:nd2
         i = 1
         while i <= n
-            println("depth $(depth-1)")
-#            T = t
-#            for k = 1:depth-1
-#                T = kron(s',T)
-#            end
             if i == n || s[i+1,i] == 0
-                println("solve1 branch 1")
                 dv = view(d,drange1)
-#                dv_orig = copy(dv)
                 solve1!(r*s[i,i],depth-1,t,t2,s,s2,dv,ws)
-#                @test dv ≈ (eye(n^depth) + r*s[i,i]*T)\dv_orig
                 if i < n
                     solvi_real_eliminate!(i,n,nd,drange1,depth-1,r,t,s,d,ws)
                 end
@@ -127,12 +100,9 @@ function solve1!(r,depth,t,t2,s,s2,d,ws)
                 drange2 += nd
                 i += 1
             else
-                println("solve1 branch 2")
                 dv = view(d,drange2)
                 # s is transposed!
-#                dv_orig = copy(dv)
                 solvii(r*s[i,i],r*s[i+1,i],r*s[i,i+1],depth-1,t,t2,s,s2,dv,ws)
-#                @test dv ≈ (eye(2*n^depth) + kron(r*s[i:i+1,i:i+1]',T))\dv_orig
                 if i < n - 1
                     solvi_complex_eliminate!(i,n,nd,drange1,depth-1,r,t,s,d,ws)
                 end
@@ -161,7 +131,7 @@ end
 
 function solvi_complex_eliminate!(i,n,nd,drange,depth,r,t,s,d,ws)
     d_copy = view(ws.work1,1:length(d))
-    d_copy = copy(d)
+    copy!(d_copy,d)
     work =  view(ws.work2,1:length(drange))
     x1 = view(d_copy,drange)
     drange += nd
@@ -177,23 +147,16 @@ function solvi_complex_eliminate!(i,n,nd,drange,depth,r,t,s,d,ws)
         end
     end 
 end
-using Base.Test
+
 function solvii(alpha,beta1,beta2,depth,t,t2,s,s2,d,ws)
     m = size(t,2)
     n = size(s,1)
     nd = m*n^depth
-    d_orig = copy(d)
     transformation1(alpha,beta1,beta2,depth,t,s,d,ws)
-#    d_target = d_orig + kron([alpha -beta1; -beta2 alpha],t)*d_orig
-#    @test d ≈ d_target
     dv = view(d,1:nd)
-#    dv_orig = copy(dv)
     solviip(alpha,sqrt(-beta1*beta2),depth,t,t2,s,s2,dv,ws)
-#    @test dv ≈ (eye(n) + 2*alpha*t.data + (alpha*alpha - beta1*beta2)*t2.data)\dv_orig
     dv = view(d,nd+1:2*nd)
-#    dv_orig = copy(dv)
     solviip(alpha,sqrt(-beta1*beta2),depth,t,t2,s,s2,dv,ws)
-#    @test dv ≈ (eye(n) + 2*alpha*t.data + (alpha*alpha - beta1*beta2)*t2.data)\dv_orig
 end
 
 function transformation1(a,b1,b2,depth,t,s,d,ws)
@@ -217,11 +180,9 @@ end
 diag_zero_sq = 1e-30
 
 function solviip(alpha,beta,depth,t,t2,s,s2,d,ws)
-    println("solviip depth $depth")
     m = size(t,2)
     n = size(s,1)
     if beta*beta < diag_zero_sq
-        println("short cut")
         solve1!(alpha,depth,t,t2,s,s2,d,ws)
         solve1!(alpha,depth,t,t2,s,s2,d,ws)
         return
@@ -238,26 +199,21 @@ function solviip(alpha,beta,depth,t,t2,s,s2,d,ws)
         while i <= n
             # s is transposed
             if i == n || s[i+1,i] == 0
-                println("branch 1")
                 dv = view(d,drange1)
-                println(s[i,i]*s[i,i]*(alpha*alpha+beta*beta))
                 if s[i,i]*s[i,i]*(alpha*alpha+beta*beta) > diag_zero_sq
                     solviip(s[i,i]*alpha,s[i,i]*beta,depth-1,t,t2,s,s2,dv,ws)
                 end
                 if i < n
-                    println("solviip_real_eliminate")
                     solviip_real_eliminate!(i,n,nd,drange1,depth-1,alpha,beta,t,t2,s,s2,d,ws)
                 end
                 drange1 += nd
                 drange2 += nd
                 i += 1
             else
-                println("branch 2")
                 dv = view(d,drange2)
                 # s transposed !
                 solviip2(alpha,beta,s[i,i],s[i+1,i],s[i,i+1],depth,t,t2,s,s2,dv,ws)
                 if i < n - 1
-                    println("solviip_complex_eliminate")
                     solviip_complex_eliminate!(i,n,nd,drange1,depth-1,alpha,beta,t,t2,s,s2,d,ws)
                 end
                 drange1 += nd2
@@ -340,7 +296,7 @@ function transform2(alpha, beta, gamma, delta1, delta2, nd, depth, t, t2, s, s2,
         d2[i] += aspds*(2*gamma*delta2*d1tmp[i] + gspds*d2tmp[i])
     end
 end
-using Base.Test
+
 """
     solviip_complex_eliminate!(i,n,nd,drange,depth,alpha,beta,t,t2,s,s2,d)
 
