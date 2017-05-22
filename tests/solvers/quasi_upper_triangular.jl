@@ -170,19 +170,28 @@ function A_mul_B!(c::AbstractVecOrMat, a::QuasiUpperTriangular, b::AbstractVecOr
 end
 
 function A_mul_B!(c::AbstractMatrix, alpha::Float64, a::QuasiUpperTriangular, b::AbstractMatrix)
-    m, n = size(a)
-    if size(b, 1) != n
-        throw(DimensionMismatch("right hand side B needs first dimension of size $n, has size $(size(B,1))"))
+#    println("aa")
+#    display(a)
+#    println("")
+#    println("bb")
+#    display(b)
+#    println("")
+    m, n = size(b)
+    if size(a, 1) != m
+        throw(DimensionMismatch("right hand side B needs first dimension of size $n, has size $(size(b,1))"))
     end
     copy!(c,b)
     BLAS.trmm!('L','U','N','N',alpha,a.data,c)
 
     @inbounds for i= 2:m
-        x = a[i,i-1]
-        @simd for j=1:m
+        x = alpha*a[i,i-1]
+        @simd for j=1:n
             c[i,j] += x*b[i-1,j]
         end
     end
+#    println("cc")
+#    display(c)
+#    println("")
     c
 end
 
@@ -235,16 +244,16 @@ function At_mul_B!(c::AbstractMatrix, a::QuasiUpperTriangular, b::AbstractMatrix
 end
 
 function At_mul_B!(c::AbstractMatrix, alpha::Float64, a::QuasiUpperTriangular, b::AbstractMatrix)
-    m, n = size(a)
-    if size(b, 1) != n
-        throw(DimensionMismatch("right hand side B needs first dimension of size $n, has size $(size(B,1))"))
+    m, n = size(b)
+    if size(a, 1) != m
+        throw(DimensionMismatch("right hand side B needs first dimension of size $n, has size $(size(b,1))"))
     end
     copy!(c,b)
     BLAS.trmm!('L','U','T','N',alpha,a.data,c)
 
     @inbounds for i= 1:m-1
-        x = a[i+1,i]
-        @simd for j=1:m
+        x = alpha*a[i+1,i]
+        @simd for j=1:n
             c[i,j] += x*b[i+1,j]
         end
     end
@@ -292,8 +301,8 @@ function A_mul_B!(c::AbstractMatrix, alpha::Float64, a::AbstractMatrix, b::Quasi
     copy!(c,a)
     BLAS.trmm!('R','U','N','N',alpha,b.data,c)
 
-    @inbounds for i= 2:m
-        x = b[i,i-1]
+    @inbounds for i= 2:n
+        x = alpha*b[i,i-1]
         @simd for j=1:m
             c[j,i-1] += x*a[j,i]
         end
@@ -308,7 +317,7 @@ function A_mul_B!(c::AbstractVecOrMat, alpha::Float64, a::AbstractVecOrMat, b::Q
           (Ref{UInt8}, Ref{UInt8}, Ref{UInt8}, Ref{UInt8}, Ref{BlasInt}, Ref{BlasInt},
            Ref{Float64}, Ptr{Float64}, Ref{BlasInt}, Ptr{Float64}, Ref{BlasInt}),
           Ref{UInt8}('R'), Ref{UInt8}('U'), Ref{UInt8}('N'), Ref{UInt8}('N'), Ref{BlasInt}(nr), Ref{BlasInt}(nc),
-          Ref{Float64}(alpha), b.data, Ref{BlasInt}(nr), c, Ref{BlasInt}(nr))
+          Ref{Float64}(alpha), b.data, Ref{BlasInt}(nc), c, Ref{BlasInt}(nr))
 
     a1 = reshape(a,nr,nc)
     c1 = reshape(c,nr,nc)
@@ -356,9 +365,8 @@ function A_mul_Bt!(c::AbstractMatrix, alpha::Float64, a::AbstractMatrix, b::Quas
     end
     copy!(c,a)
     BLAS.trmm!('R','U','T','N',alpha,b.data,c)
-
-    @inbounds for j= 2:m
-        x = b[j,j-1]
+    @inbounds for j= 2:n
+        x = alpha*b[j,j-1]
         @simd for i=1:m
             c[i,j] += x*a[i,j-1]
         end
@@ -389,9 +397,12 @@ function A_mul_Bt!(A::AbstractMatrix, B::QuasiUpperTriangular)
     A
 end
 
-A_mul_B!(c::AbstractMatrix,a::QuasiUpperTriangular,b::QuasiUpperTriangular) = A_mul_B!(c,a,Matrix(b))
-At_mul_B!(c::AbstractMatrix,a::QuasiUpperTriangular,b::QuasiUpperTriangular) = At_mul_B!(c,a,Matrix(b))
-A_mul_Bt!(c::AbstractMatrix,a::QuasiUpperTriangular,b::QuasiUpperTriangular) = A_mul_Bt!(c,a,Matrix(b))
+A_mul_B!(c::QuasiUpperTriangular,a::QuasiUpperTriangular,b::QuasiUpperTriangular) = A_mul_B!(c.data,a,b.data)
+At_mul_B!(c::QuasiUpperTriangular,a::QuasiUpperTriangular,b::QuasiUpperTriangular) = At_mul_B!(c.data,a,b.data)
+A_mul_Bt!(c::QuasiUpperTriangular,a::QuasiUpperTriangular,b::QuasiUpperTriangular) = A_mul_Bt!(c.data,a,b.data)
+A_mul_B!(c::AbstractMatrix,a::QuasiUpperTriangular,b::QuasiUpperTriangular) = A_mul_B!(c,a,b.data)
+At_mul_B!(c::AbstractMatrix,a::QuasiUpperTriangular,b::QuasiUpperTriangular) = At_mul_B!(c,a,b.data)
+A_mul_Bt!(c::AbstractMatrix,a::QuasiUpperTriangular,b::QuasiUpperTriangular) = A_mul_Bt!(c,a,b.data)
 
 # solver by substitution
 function A_ldiv_B!(a::QuasiUpperTriangular, b::AbstractMatrix)

@@ -44,7 +44,7 @@ end
 
 function solver!(t,s,d,order)
     n = size(t,1)
-    s2 = s*s
+    s2 = QuasiUpperTriangular(s*s)
     t2 = QuasiUpperTriangular(t*t)
     td = similar(d)
     solvi(1.0,order,t,t2,s,s2,d,td)
