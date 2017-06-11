@@ -1,9 +1,9 @@
+module DGGES
+
 # general Schur decomposition with reordering
 # adataped from ./base/linalg/lapack.jl
 
 include("exceptions.jl")
-
-module DGGES
 
 import Base: USE_BLAS64
 export DgeesWS, dgees!, DggesWS, dgges!

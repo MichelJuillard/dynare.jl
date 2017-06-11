@@ -1,5 +1,4 @@
-include("dgges.jl")
-using DGGES
+using Schur
 
 type GsSolverWS:
     dgges_ws::DggesWS

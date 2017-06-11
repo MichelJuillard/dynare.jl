@@ -27,6 +27,9 @@ type FirstOrderSolverWS
         if m.n_static > 0
             jacobian_static = Array{Float64,2}(m.endo_nbr,m.n_static)
             qr_ws = QrWS(jacobian_static)
+        else
+            jacobian_static = Array(Float64,0,0)
+            qr_ws = QrWS(Array(Float64,0,0))
         end
         if algo == "GS"
             d = zeros(m.n_dyn,m.n_dyn)

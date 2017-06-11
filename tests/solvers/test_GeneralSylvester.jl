@@ -21,7 +21,7 @@ s = lu(c)[2]
 d = zeros(n^(depth+1))
 r = 1.0
 real_eliminate!(index,1:n,n^3-n+1,depth,y,r,t,s,d)
-kf = kron(s,s)
+kf = kron(s',s')
 d_target = -kron(kf[:,size(kf,2)],y)
 @test d[1:end-n] ≈ d_target[1:end-n]
 
@@ -41,8 +41,8 @@ d_orig = copy(d)
 order = 0
 depth = order
 index = []
-index_j = 1:n
-solvi(r,index,index_j,depth,t,s,d)
+d_block_number = 1
+solvi(r,index,d_block_number,depth,t,s,d)
 d_target = (eye(n) + t)\d_orig
 @test d_target ≈ d
 
@@ -52,11 +52,10 @@ d_orig = copy(d)
 order = 2
 depth = order
 index = zeros(Int64,depth)
-index_j = collect(n^3-n+(1:n))
-println("index_j ",index_j)
-solvi(r,index,index_j,depth,t,s,d)
+d_block_number = n^depth
+solvi(r,index,d_block_number,depth,t,s,d)
 
-d_target = (eye(n^3) + kron(kron(s,s),t))\d_orig
+d_target = (eye(n^3) + kron(kron(s',s'),t))\d_orig
 
 @test d ≈ d_target
 
@@ -69,7 +68,7 @@ ss = GeneralSylvester.QuasiUpperTriangular(s)
 d = randn(2*n^depth)
 d_orig = copy(d)
 transformation1(a,b1,b2,depth,tt,ss,d)
-d_target = d_orig + kron([a -b1; -b2 a],kron(s,t))*d_orig
+d_target = d_orig + kron([a -b1; -b2 a],kron(s',t))*d_orig
 
 @test d ≈ d_target
 

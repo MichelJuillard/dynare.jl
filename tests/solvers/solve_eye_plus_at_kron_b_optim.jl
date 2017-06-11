@@ -13,13 +13,13 @@ export EyePlusAtKronBWS, general_sylvester_solver!, real_eliminate!, solvi, tran
 immutable EyePlusAtKronBWS
     n_s::Int64
     n_t::Int64
-    vs_b::Array{Float64,2}
-    vs_c::Array{Float64,2}
+    vs_b::Matrix{Float64}
+    vs_c::Matrix{Float64}
     s2::QuasiUpperTriangular{Float64,Matrix{Float64}}
     t2::QuasiUpperTriangular{Float64,Matrix{Float64}}
-    work1::Array{Float64,1}
-    work2::Array{Float64,1}
-    work3::Array{Float64,1}
+    work1::Vector{Float64}
+    work2::Vector{Float64}
+    work3::Vector{Float64}
     linsolve_ws::LinSolveWS
     dgees_ws_b::DgeesWS
     dgees_ws_c::DgeesWS
@@ -45,13 +45,8 @@ immutable EyePlusAtKronBWS
     end
 end
 
-function swap(a,b)
-    tmp = a
-    b = a
-    a = tmp
-end
-using Base.Test
-function general_sylvester_solver!(a,b,c,d,order,ws)
+function general_sylvester_solver!(a::AbstractMatrix,b::AbstractMatrix,c::AbstractMatrix,
+                                   d::AbstractMatrix,order::Int64,ws::EyePlusAtKronBWS)
     linsolve_core!(ws.linsolve_ws,Ref{UInt8}('N'),a,b,d)
     dgees!(ws.dgees_ws_b,b)
     dgees!(ws.dgees_ws_c,c)
@@ -113,23 +108,28 @@ function solve1!(r,depth,t,t2,s,s2,d,ws)
         end
     end
 end
-using Base.Test
-function solvi_real_eliminate!(i,n,nd,drange,depth,r,t,s,d,ws)
+
+function solvi_real_eliminate!(i::Int64,n::Int64,nd::Int64,drange::UnitRange{Int64},
+                               depth::Int64,r::Float64,t::QuasiUpperTriangular,s::QuasiUpperTriangular,
+                               d::Vector{Float64},ws::EyePlusAtKronBWS)
     d_copy = view(ws.work1,1:length(d))
     copy!(d_copy,d)
     d1 = view(d_copy,drange)
     work = view(ws.work2,1:length(drange))
     kron_at_kron_b_mul_c!(s,depth,t,d1,work)
-    for j = i+1:n
+    @inbounds for j = i+1:n
         drange += nd
         dv = view(d,drange)
-        for k = 1:nd
-            dv[k] -= r*s[i,j]*d1[k]
+        m = r*s[i,j]
+        @simd for k = 1:nd
+            dv[k] -= m*d1[k]
         end
     end 
 end
 
-function solvi_complex_eliminate!(i,n,nd,drange,depth,r,t,s,d,ws)
+function solvi_complex_eliminate!(i::Int64,n::Int64,nd::Int64,drange::UnitRange{Int64},
+                                  depth::Int64,r::Float64,t::QuasiUpperTriangular,s::QuasiUpperTriangular,
+                                  d::Vector{Float64},ws::EyePlusAtKronBWS)
     d_copy = view(ws.work1,1:length(d))
     copy!(d_copy,d)
     work =  view(ws.work2,1:length(drange))
@@ -138,17 +138,21 @@ function solvi_complex_eliminate!(i,n,nd,drange,depth,r,t,s,d,ws)
     x2 = view(d_copy,drange)
     kron_at_kron_b_mul_c!(s,depth,t,x1,work)
     kron_at_kron_b_mul_c!(s,depth,t,x2,work)
-    for j = i+2:n
+    @inbounds for j = i+2:n
         drange += nd
         dv = view(d,drange)
         # can probably be optimized
-        for k = 1:nd
-            dv[k] -= r*(s[i,j]*x1[k] + s[i+1,j]*x2[k])
+        m1 = r*s[i,j]
+        m2 = r*s[i+1,j]
+        @simd for k = 1:nd
+            dv[k] -= m1*x1[k] + m2*x2[k]
         end
     end 
 end
 
-function solvii(alpha,beta1,beta2,depth,t,t2,s,s2,d,ws)
+function solvii(alpha::Float64,beta1::Float64,beta2::Float64,depth::Int64,
+                t::QuasiUpperTriangular,t2::QuasiUpperTriangular,s::QuasiUpperTriangular,
+                s2::QuasiUpperTriangular,d::Vector{Float64},ws::EyePlusAtKronBWS)
     m = size(t,2)
     n = size(s,1)
     nd = m*n^depth
@@ -159,7 +163,9 @@ function solvii(alpha,beta1,beta2,depth,t,t2,s,s2,d,ws)
     solviip(alpha,sqrt(-beta1*beta2),depth,t,t2,s,s2,dv,ws)
 end
 
-function transformation1(a,b1,b2,depth,t,s,d,ws)
+function transformation1(a::Float64,b1::Float64,b2::Float64,depth::Int64,
+                         t::QuasiUpperTriangular,s::QuasiUpperTriangular,
+                         d::Vector{Float64},ws::EyePlusAtKronBWS)
     m = size(t,2)
     n = size(s,1)
     nd = m*n^depth
@@ -171,7 +177,7 @@ function transformation1(a,b1,b2,depth,t,s,d,ws)
     work = view(ws.work2,drange)
     kron_at_kron_b_mul_c!(s,depth,t,d1,work)
     kron_at_kron_b_mul_c!(s,depth,t,d2,work)
-    for i = drange
+    @inbounds @simd for i = drange
         d[i] += a*d1[i] - b1*d2[i]
         d[i+nd] += -b2*d1[i] + a*d2[i] 
     end
@@ -179,7 +185,8 @@ end
 
 diag_zero_sq = 1e-30
 
-function solviip(alpha,beta,depth,t,t2,s,s2,d,ws)
+function solviip(alpha::Float64,beta::Float64,depth::Int64,t::QuasiUpperTriangular,t2::QuasiUpperTriangular,
+                 s::QuasiUpperTriangular,s2::QuasiUpperTriangular,d::Vector{Float64},ws::EyePlusAtKronBWS)
     m = size(t,2)
     n = size(s,1)
     if beta*beta < diag_zero_sq
@@ -224,7 +231,10 @@ function solviip(alpha,beta,depth,t,t2,s,s2,d,ws)
     end
 end
 
-function solviip_real_eliminate!(i,n,nd,drange,depth,alpha,beta,t,t2,s,s2,d,ws)
+function solviip_real_eliminate!(i::Int64,n::Int64,nd::Int64,drange::UnitRange{Int64},
+                                 depth::Int64,alpha::Float64,beta::Float64,t::QuasiUpperTriangular,
+                                 t2::QuasiUpperTriangular,s::QuasiUpperTriangular,
+                                 s2::QuasiUpperTriangular,d::Vector{Float64},ws::EyePlusAtKronBWS)
     y1 = view(ws.work1,drange)
     y2 = view(ws.work1,drange+nd)
     copy!(y1,d[drange])
@@ -232,16 +242,20 @@ function solviip_real_eliminate!(i,n,nd,drange,depth,alpha,beta,t,t2,s,s2,d,ws)
     work = view(ws.work2,1:length(drange))
     kron_at_kron_b_mul_c!(s,depth,t,y1,work)
     kron_at_kron_b_mul_c!(s2,depth,t2,y2,work)
-    for j = i+1:n
+    @inbounds for j = i+1:n
         drange += nd
         dv = view(d,drange)
-        for k = 1:nd
-            dv[k] -= 2*alpha*s[i,j]*y1[k] + (alpha*alpha+beta*beta)*s2[i,j]*y2[k]
+        m1 = 2*alpha*s[i,j]
+        m2 = (alpha*alpha+beta*beta)*s2[i,j]
+        @simd for k = 1:nd
+            dv[k] -= m1*y1[k] + m2*y2[k]
         end
     end 
 end
 
-function solviip2(alpha,beta,gamma,delta1,delta2,depth,t,t2,s,s2,d,ws)
+function solviip2(alpha::Float64,beta::Float64,gamma::Float64,delta1::Float64,delta2::Float64,
+                  depth::Int64,t::QuasiUpperTriangular,t2::QuasiUpperTriangular,
+                  s::QuasiUpperTriangular,s2::QuasiUpperTriangular,d::Vector{Float64},ws::EyePlusAtKronBWS)
     m = size(t,2)
     n = size(s,1)
     aspds = alpha*alpha + beta*beta
@@ -263,7 +277,9 @@ function solviip2(alpha,beta,gamma,delta1,delta2,depth,t,t2,s,s2,d,ws)
     end
 end
 
-function transform2(alpha, beta, gamma, delta1, delta2, nd, depth, t, t2, s, s2, d, ws)
+function transform2(alpha::Float64, beta::Float64, gamma::Float64, delta1::Float64, delta2::Float64,
+                    nd::Float64, depth::Int64, t::QuasiUpperTriangular, t2::QuasiUpperTriangular,
+                    s::QuasiUpperTriangular, s2::QuasiUpperTriangular, d::Vector{Float64}, ws::EyePlusAtKronBWS)
     drange = 1:nd
     d1 = view(d,drange)
     d2 = view(d,drange+nd)
@@ -279,8 +295,10 @@ function transform2(alpha, beta, gamma, delta1, delta2, nd, depth, t, t2, s, s2,
     kron_at_kron_b_mul_c!(s,depth-1,t,d1tmp,work)
     kron_at_kron_b_mul_c!(s,depth-1,t,d2tmp,work)
 
-    for i = 1:nd
-        d1[i] += 2*alpha*(gamma*d1tmp[i] + delta1*d2tmp[i])
+    m1 = 2*alpha*gamma
+    m2 = 2*alpha*delta1
+    @inbounds @simd for i = 1:nd
+        d1[i] += m1*d1tmp[i] + m2*d2tmp[i]
         d2[i] += 2*alpha*(delta2*d1tmp[i] + gamma*d2tmp[i])
     end
     
@@ -291,9 +309,12 @@ function transform2(alpha, beta, gamma, delta1, delta2, nd, depth, t, t2, s, s2,
 
     aspds = alpha*alpha + beta*beta;
     gspds = gamma*gamma + delta1*delta2;
-    for i = 1:nd
-        d1[i] += aspds*(gspds*d1tmp[i] + 2*gamma*delta1*d2tmp[i])
-        d2[i] += aspds*(2*gamma*delta2*d1tmp[i] + gspds*d2tmp[i])
+    m1 = aspds*gspds
+    m2 = 2*aspds*gamma*delta1
+    m3 = 2*aspds*gamma*delta2
+    @inbounds @simd for i = 1:nd
+        d1[i] += m1*d1tmp[i] + m2*d2tmp[i]
+        d2[i] += m3*d1tmp[i] + m1*d2tmp[i]
     end
 end
 
@@ -308,7 +329,9 @@ The solution is stored in d[drange; drange + nd]
 
 The function updates d[i*nd+1:n*nd]
 """
-function solviip_complex_eliminate!(i,n,nd,drange,depth,alpha,beta,t,t2,s,s2,d,ws)
+function solviip_complex_eliminate!(i::Int64,n::Int64,nd::Int64,drange::UnitRange{Int64},depth::Int64,
+                                    alpha::Float64,beta::Float64,t::QuasiUpperTriangular,t2::QuasiUpperTriangular,
+                                    s::QuasiUpperTriangular,s2::QuasiUpperTriangular,d::Vector{Float64},ws::EyePlusAtKronBWS)
     y11 = view(ws.work1,drange)
     y12 = view(ws.work1,drange+nd)
     copy!(y11,d[drange])
@@ -319,24 +342,22 @@ function solviip_complex_eliminate!(i,n,nd,drange,depth,alpha,beta,t,t2,s,s2,d,w
     copy!(y21,d[drange])
     copy!(y22,d[drange])
     work = view(ws.work3,drange)
-    y11_o = copy(y11)
-    y12_o = copy(y12)
-    y21_o = copy(y21)
-    y22_o = copy(y22)
+
     kron_at_kron_b_mul_c!(s,depth,t,y11,work)
     kron_at_kron_b_mul_c!(s2,depth,t2,y12,work)
     kron_at_kron_b_mul_c!(s,depth,t,y21,work)
     kron_at_kron_b_mul_c!(s2,depth,t2,y22,work)
 
-    if depth == 1
-        @test y11 ≈ kron(s',t)*y11_o
-    end
-    for j = i+2:n
+    alpha2beta2 = alpha*alpha + beta*beta
+    @inbounds for j = i+2:n
         drange += nd
         dv = view(d,drange)
-        for k = 1:nd
-            dv[k] -= (2*alpha*s[i,j]*y11[k] + (alpha*alpha+beta*beta)*s2[i,j]*y12[k]
-                      + 2*alpha*s[i+1,j]*y21[k] + (alpha*alpha+beta*beta)*s2[i+1,j]*y22[k])
+        m1 = 2*alpha*s[i,j]
+        m2 = alpha2beta2*s2[i,j]
+        m3 = 2*alpha*s[i+1,j]
+        m4 = alpha2beta2*s2[i+1,j]
+        @simd for k = 1:nd
+            dv[k] -= m1*y11[k] + m2*y12[k] + m3*y21[k] + m4*y22[k]
         end
     end 
 end

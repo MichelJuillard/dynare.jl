@@ -1,0 +1,564 @@
+{"static_model_derivatives": {"external_functions_model_local_variables": [], "model_local_variables": [], "external_functions_temporary_terms_": [], "temporary_terms_": [{"temporary_term": "T11", "value": "c^(-gamma)"}
+, {"temporary_term": "T19", "value": "T11*beta"}
+, {"temporary_term": "T23", "value": "1-delta"}
+, {"temporary_term": "T27", "value": "alpha-1"}
+, {"temporary_term": "T28", "value": "k1^T27"}
+, {"temporary_term": "T30", "value": "T23+alpha*a1*T28"}
+, {"temporary_term": "T49", "value": "k2^T27"}
+, {"temporary_term": "T51", "value": "T23+alpha*a2*T49"}
+, {"temporary_term": "T67", "value": "k3^T27"}
+, {"temporary_term": "T69", "value": "T23+alpha*a3*T67"}
+, {"temporary_term": "T85", "value": "k4^T27"}
+, {"temporary_term": "T87", "value": "T23+alpha*a4*T85"}
+, {"temporary_term": "T103", "value": "k5^T27"}
+, {"temporary_term": "T105", "value": "T23+alpha*a5*T103"}
+, {"temporary_term": "T121", "value": "k6^T27"}
+, {"temporary_term": "T123", "value": "T23+alpha*a6*T121"}
+, {"temporary_term": "T139", "value": "k7^T27"}
+, {"temporary_term": "T141", "value": "T23+alpha*a7*T139"}
+, {"temporary_term": "T157", "value": "k8^T27"}
+, {"temporary_term": "T159", "value": "T23+alpha*a8*T157"}
+, {"temporary_term": "T175", "value": "k9^T27"}
+, {"temporary_term": "T177", "value": "T23+alpha*a9*T175"}
+, {"temporary_term": "T193", "value": "k10^T27"}
+, {"temporary_term": "T195", "value": "T23+alpha*a10*T193"}
+, {"temporary_term": "T211", "value": "k11^T27"}
+, {"temporary_term": "T213", "value": "T23+alpha*a11*T211"}
+, {"temporary_term": "T229", "value": "k12^T27"}
+, {"temporary_term": "T231", "value": "T23+alpha*a12*T229"}
+, {"temporary_term": "T247", "value": "k13^T27"}
+, {"temporary_term": "T249", "value": "T23+alpha*a13*T247"}
+, {"temporary_term": "T265", "value": "k14^T27"}
+, {"temporary_term": "T267", "value": "T23+alpha*a14*T265"}
+, {"temporary_term": "T283", "value": "k15^T27"}
+, {"temporary_term": "T285", "value": "T23+alpha*a15*T283"}
+, {"temporary_term": "T301", "value": "k16^T27"}
+, {"temporary_term": "T303", "value": "T23+alpha*a16*T301"}
+, {"temporary_term": "T319", "value": "k17^T27"}
+, {"temporary_term": "T321", "value": "T23+alpha*a17*T319"}
+, {"temporary_term": "T337", "value": "k18^T27"}
+, {"temporary_term": "T339", "value": "T23+alpha*a18*T337"}
+, {"temporary_term": "T355", "value": "k19^T27"}
+, {"temporary_term": "T357", "value": "T23+alpha*a19*T355"}
+, {"temporary_term": "T373", "value": "k20^T27"}
+, {"temporary_term": "T375", "value": "T23+alpha*a20*T373"}
+, {"temporary_term": "T391", "value": "k21^T27"}
+, {"temporary_term": "T393", "value": "T23+alpha*a21*T391"}
+, {"temporary_term": "T409", "value": "k22^T27"}
+, {"temporary_term": "T411", "value": "T23+alpha*a22*T409"}
+, {"temporary_term": "T427", "value": "k23^T27"}
+, {"temporary_term": "T429", "value": "T23+alpha*a23*T427"}
+, {"temporary_term": "T445", "value": "k24^T27"}
+, {"temporary_term": "T447", "value": "T23+alpha*a24*T445"}
+, {"temporary_term": "T463", "value": "k25^T27"}
+, {"temporary_term": "T465", "value": "T23+alpha*a25*T463"}
+, {"temporary_term": "T481", "value": "k26^T27"}
+, {"temporary_term": "T483", "value": "T23+alpha*a26*T481"}
+, {"temporary_term": "T499", "value": "k27^T27"}
+, {"temporary_term": "T501", "value": "T23+alpha*a27*T499"}
+, {"temporary_term": "T517", "value": "k28^T27"}
+, {"temporary_term": "T519", "value": "T23+alpha*a28*T517"}
+, {"temporary_term": "T535", "value": "k29^T27"}
+, {"temporary_term": "T537", "value": "T23+alpha*a29*T535"}
+, {"temporary_term": "T553", "value": "k30^T27"}
+, {"temporary_term": "T555", "value": "T23+alpha*a30*T553"}
+, {"temporary_term": "T571", "value": "k31^T27"}
+, {"temporary_term": "T573", "value": "T23+alpha*a31*T571"}
+, {"temporary_term": "T589", "value": "k32^T27"}
+, {"temporary_term": "T591", "value": "T23+alpha*a32*T589"}
+, {"temporary_term": "T607", "value": "k33^T27"}
+, {"temporary_term": "T609", "value": "T23+alpha*a33*T607"}
+, {"temporary_term": "T625", "value": "k34^T27"}
+, {"temporary_term": "T627", "value": "T23+alpha*a34*T625"}
+, {"temporary_term": "T643", "value": "k35^T27"}
+, {"temporary_term": "T645", "value": "T23+alpha*a35*T643"}
+, {"temporary_term": "T661", "value": "k36^T27"}
+, {"temporary_term": "T663", "value": "T23+alpha*a36*T661"}
+, {"temporary_term": "T679", "value": "k37^T27"}
+, {"temporary_term": "T681", "value": "T23+alpha*a37*T679"}
+, {"temporary_term": "T697", "value": "k38^T27"}
+, {"temporary_term": "T699", "value": "T23+alpha*a38*T697"}
+, {"temporary_term": "T715", "value": "k39^T27"}
+, {"temporary_term": "T717", "value": "T23+alpha*a39*T715"}
+, {"temporary_term": "T733", "value": "k40^T27"}
+, {"temporary_term": "T735", "value": "T23+alpha*a40*T733"}
+, {"temporary_term": "T751", "value": "k41^T27"}
+, {"temporary_term": "T753", "value": "T23+alpha*a41*T751"}
+, {"temporary_term": "T769", "value": "k42^T27"}
+, {"temporary_term": "T771", "value": "T23+alpha*a42*T769"}
+, {"temporary_term": "T787", "value": "k43^T27"}
+, {"temporary_term": "T789", "value": "T23+alpha*a43*T787"}
+, {"temporary_term": "T805", "value": "k44^T27"}
+, {"temporary_term": "T807", "value": "T23+alpha*a44*T805"}
+, {"temporary_term": "T823", "value": "k45^T27"}
+, {"temporary_term": "T825", "value": "T23+alpha*a45*T823"}
+, {"temporary_term": "T841", "value": "k46^T27"}
+, {"temporary_term": "T843", "value": "T23+alpha*a46*T841"}
+, {"temporary_term": "T859", "value": "k47^T27"}
+, {"temporary_term": "T861", "value": "T23+alpha*a47*T859"}
+, {"temporary_term": "T877", "value": "k48^T27"}
+, {"temporary_term": "T879", "value": "T23+alpha*a48*T877"}
+, {"temporary_term": "T895", "value": "k49^T27"}
+, {"temporary_term": "T897", "value": "T23+alpha*a49*T895"}
+, {"temporary_term": "T913", "value": "k50^T27"}
+, {"temporary_term": "T915", "value": "T23+alpha*a50*T913"}
+, {"temporary_term": "T1077", "value": "k1^alpha"}
+, {"temporary_term": "T1079", "value": "k2^alpha"}
+, {"temporary_term": "T1082", "value": "k3^alpha"}
+, {"temporary_term": "T1085", "value": "k4^alpha"}
+, {"temporary_term": "T1088", "value": "k5^alpha"}
+, {"temporary_term": "T1091", "value": "k6^alpha"}
+, {"temporary_term": "T1094", "value": "k7^alpha"}
+, {"temporary_term": "T1097", "value": "k8^alpha"}
+, {"temporary_term": "T1100", "value": "k9^alpha"}
+, {"temporary_term": "T1103", "value": "k10^alpha"}
+, {"temporary_term": "T1106", "value": "k11^alpha"}
+, {"temporary_term": "T1109", "value": "k12^alpha"}
+, {"temporary_term": "T1112", "value": "k13^alpha"}
+, {"temporary_term": "T1115", "value": "k14^alpha"}
+, {"temporary_term": "T1118", "value": "k15^alpha"}
+, {"temporary_term": "T1121", "value": "k16^alpha"}
+, {"temporary_term": "T1124", "value": "k17^alpha"}
+, {"temporary_term": "T1127", "value": "k18^alpha"}
+, {"temporary_term": "T1130", "value": "k19^alpha"}
+, {"temporary_term": "T1133", "value": "k20^alpha"}
+, {"temporary_term": "T1136", "value": "k21^alpha"}
+, {"temporary_term": "T1139", "value": "k22^alpha"}
+, {"temporary_term": "T1142", "value": "k23^alpha"}
+, {"temporary_term": "T1145", "value": "k24^alpha"}
+, {"temporary_term": "T1148", "value": "k25^alpha"}
+, {"temporary_term": "T1151", "value": "k26^alpha"}
+, {"temporary_term": "T1154", "value": "k27^alpha"}
+, {"temporary_term": "T1157", "value": "k28^alpha"}
+, {"temporary_term": "T1160", "value": "k29^alpha"}
+, {"temporary_term": "T1163", "value": "k30^alpha"}
+, {"temporary_term": "T1166", "value": "k31^alpha"}
+, {"temporary_term": "T1169", "value": "k32^alpha"}
+, {"temporary_term": "T1172", "value": "k33^alpha"}
+, {"temporary_term": "T1175", "value": "k34^alpha"}
+, {"temporary_term": "T1178", "value": "k35^alpha"}
+, {"temporary_term": "T1181", "value": "k36^alpha"}
+, {"temporary_term": "T1184", "value": "k37^alpha"}
+, {"temporary_term": "T1187", "value": "k38^alpha"}
+, {"temporary_term": "T1190", "value": "k39^alpha"}
+, {"temporary_term": "T1193", "value": "k40^alpha"}
+, {"temporary_term": "T1196", "value": "k41^alpha"}
+, {"temporary_term": "T1199", "value": "k42^alpha"}
+, {"temporary_term": "T1202", "value": "k43^alpha"}
+, {"temporary_term": "T1205", "value": "k44^alpha"}
+, {"temporary_term": "T1208", "value": "k45^alpha"}
+, {"temporary_term": "T1211", "value": "k46^alpha"}
+, {"temporary_term": "T1214", "value": "k47^alpha"}
+, {"temporary_term": "T1217", "value": "k48^alpha"}
+, {"temporary_term": "T1220", "value": "k49^alpha"}
+, {"temporary_term": "T1223", "value": "k50^alpha"}
+], 
+"residuals":[
+{"residual": {"lhs": "T11", "rhs": "T19*T30"}}
+, {"residual": {"lhs": "log(a1)", "rhs": "log(a1)*rho+sigma*(e+e1)"}}
+, {"residual": {"lhs": "T11", "rhs": "T19*T51"}}
+, {"residual": {"lhs": "log(a2)", "rhs": "rho*log(a2)+sigma*(e+e2)"}}
+, {"residual": {"lhs": "T11", "rhs": "T19*T69"}}
+, {"residual": {"lhs": "log(a3)", "rhs": "rho*log(a3)+sigma*(e+e3)"}}
+, {"residual": {"lhs": "T11", "rhs": "T19*T87"}}
+, {"residual": {"lhs": "log(a4)", "rhs": "rho*log(a4)+sigma*(e+e4)"}}
+, {"residual": {"lhs": "T11", "rhs": "T19*T105"}}
+, {"residual": {"lhs": "log(a5)", "rhs": "rho*log(a5)+sigma*(e+e5)"}}
+, {"residual": {"lhs": "T11", "rhs": "T19*T123"}}
+, {"residual": {"lhs": "log(a6)", "rhs": "rho*log(a6)+sigma*(e+e6)"}}
+, {"residual": {"lhs": "T11", "rhs": "T19*T141"}}
+, {"residual": {"lhs": "log(a7)", "rhs": "rho*log(a7)+sigma*(e+e7)"}}
+, {"residual": {"lhs": "T11", "rhs": "T19*T159"}}
+, {"residual": {"lhs": "log(a8)", "rhs": "rho*log(a8)+sigma*(e+e8)"}}
+, {"residual": {"lhs": "T11", "rhs": "T19*T177"}}
+, {"residual": {"lhs": "log(a9)", "rhs": "rho*log(a9)+sigma*(e+e9)"}}
+, {"residual": {"lhs": "T11", "rhs": "T19*T195"}}
+, {"residual": {"lhs": "log(a10)", "rhs": "rho*log(a10)+sigma*(e+e10)"}}
+, {"residual": {"lhs": "T11", "rhs": "T19*T213"}}
+, {"residual": {"lhs": "log(a11)", "rhs": "rho*log(a11)+sigma*(e+e11)"}}
+, {"residual": {"lhs": "T11", "rhs": "T19*T231"}}
+, {"residual": {"lhs": "log(a12)", "rhs": "rho*log(a12)+sigma*(e+e12)"}}
+, {"residual": {"lhs": "T11", "rhs": "T19*T249"}}
+, {"residual": {"lhs": "log(a13)", "rhs": "rho*log(a13)+sigma*(e+e13)"}}
+, {"residual": {"lhs": "T11", "rhs": "T19*T267"}}
+, {"residual": {"lhs": "log(a14)", "rhs": "rho*log(a14)+sigma*(e+e14)"}}
+, {"residual": {"lhs": "T11", "rhs": "T19*T285"}}
+, {"residual": {"lhs": "log(a15)", "rhs": "rho*log(a15)+sigma*(e+e15)"}}
+, {"residual": {"lhs": "T11", "rhs": "T19*T303"}}
+, {"residual": {"lhs": "log(a16)", "rhs": "rho*log(a16)+sigma*(e+e16)"}}
+, {"residual": {"lhs": "T11", "rhs": "T19*T321"}}
+, {"residual": {"lhs": "log(a17)", "rhs": "rho*log(a17)+sigma*(e+e17)"}}
+, {"residual": {"lhs": "T11", "rhs": "T19*T339"}}
+, {"residual": {"lhs": "log(a18)", "rhs": "rho*log(a18)+sigma*(e+e18)"}}
+, {"residual": {"lhs": "T11", "rhs": "T19*T357"}}
+, {"residual": {"lhs": "log(a19)", "rhs": "rho*log(a19)+sigma*(e+e19)"}}
+, {"residual": {"lhs": "T11", "rhs": "T19*T375"}}
+, {"residual": {"lhs": "log(a20)", "rhs": "rho*log(a20)+sigma*(e+e20)"}}
+, {"residual": {"lhs": "T11", "rhs": "T19*T393"}}
+, {"residual": {"lhs": "log(a21)", "rhs": "rho*log(a21)+sigma*(e+e21)"}}
+, {"residual": {"lhs": "T11", "rhs": "T19*T411"}}
+, {"residual": {"lhs": "log(a22)", "rhs": "rho*log(a22)+sigma*(e+e22)"}}
+, {"residual": {"lhs": "T11", "rhs": "T19*T429"}}
+, {"residual": {"lhs": "log(a23)", "rhs": "rho*log(a23)+sigma*(e+e23)"}}
+, {"residual": {"lhs": "T11", "rhs": "T19*T447"}}
+, {"residual": {"lhs": "log(a24)", "rhs": "rho*log(a24)+sigma*(e+e24)"}}
+, {"residual": {"lhs": "T11", "rhs": "T19*T465"}}
+, {"residual": {"lhs": "log(a25)", "rhs": "rho*log(a25)+sigma*(e+e25)"}}
+, {"residual": {"lhs": "T11", "rhs": "T19*T483"}}
+, {"residual": {"lhs": "log(a26)", "rhs": "rho*log(a26)+sigma*(e+e26)"}}
+, {"residual": {"lhs": "T11", "rhs": "T19*T501"}}
+, {"residual": {"lhs": "log(a27)", "rhs": "rho*log(a27)+sigma*(e+e27)"}}
+, {"residual": {"lhs": "T11", "rhs": "T19*T519"}}
+, {"residual": {"lhs": "log(a28)", "rhs": "rho*log(a28)+sigma*(e+e28)"}}
+, {"residual": {"lhs": "T11", "rhs": "T19*T537"}}
+, {"residual": {"lhs": "log(a29)", "rhs": "rho*log(a29)+sigma*(e+e29)"}}
+, {"residual": {"lhs": "T11", "rhs": "T19*T555"}}
+, {"residual": {"lhs": "log(a30)", "rhs": "rho*log(a30)+sigma*(e+e30)"}}
+, {"residual": {"lhs": "T11", "rhs": "T19*T573"}}
+, {"residual": {"lhs": "log(a31)", "rhs": "rho*log(a31)+sigma*(e+e31)"}}
+, {"residual": {"lhs": "T11", "rhs": "T19*T591"}}
+, {"residual": {"lhs": "log(a32)", "rhs": "rho*log(a32)+sigma*(e+e32)"}}
+, {"residual": {"lhs": "T11", "rhs": "T19*T609"}}
+, {"residual": {"lhs": "log(a33)", "rhs": "rho*log(a33)+sigma*(e+e33)"}}
+, {"residual": {"lhs": "T11", "rhs": "T19*T627"}}
+, {"residual": {"lhs": "log(a34)", "rhs": "rho*log(a34)+sigma*(e+e34)"}}
+, {"residual": {"lhs": "T11", "rhs": "T19*T645"}}
+, {"residual": {"lhs": "log(a35)", "rhs": "rho*log(a35)+sigma*(e+e35)"}}
+, {"residual": {"lhs": "T11", "rhs": "T19*T663"}}
+, {"residual": {"lhs": "log(a36)", "rhs": "rho*log(a36)+sigma*(e+e36)"}}
+, {"residual": {"lhs": "T11", "rhs": "T19*T681"}}
+, {"residual": {"lhs": "log(a37)", "rhs": "rho*log(a37)+sigma*(e+e37)"}}
+, {"residual": {"lhs": "T11", "rhs": "T19*T699"}}
+, {"residual": {"lhs": "log(a38)", "rhs": "rho*log(a38)+sigma*(e+e38)"}}
+, {"residual": {"lhs": "T11", "rhs": "T19*T717"}}
+, {"residual": {"lhs": "log(a39)", "rhs": "rho*log(a39)+sigma*(e+e39)"}}
+, {"residual": {"lhs": "T11", "rhs": "T19*T735"}}
+, {"residual": {"lhs": "log(a40)", "rhs": "rho*log(a40)+sigma*(e+e40)"}}
+, {"residual": {"lhs": "T11", "rhs": "T19*T753"}}
+, {"residual": {"lhs": "log(a41)", "rhs": "rho*log(a41)+sigma*(e+e41)"}}
+, {"residual": {"lhs": "T11", "rhs": "T19*T771"}}
+, {"residual": {"lhs": "log(a42)", "rhs": "rho*log(a42)+sigma*(e+e42)"}}
+, {"residual": {"lhs": "T11", "rhs": "T19*T789"}}
+, {"residual": {"lhs": "log(a43)", "rhs": "rho*log(a43)+sigma*(e+e43)"}}
+, {"residual": {"lhs": "T11", "rhs": "T19*T807"}}
+, {"residual": {"lhs": "log(a44)", "rhs": "rho*log(a44)+sigma*(e+e44)"}}
+, {"residual": {"lhs": "T11", "rhs": "T19*T825"}}
+, {"residual": {"lhs": "log(a45)", "rhs": "rho*log(a45)+sigma*(e+e45)"}}
+, {"residual": {"lhs": "T11", "rhs": "T19*T843"}}
+, {"residual": {"lhs": "log(a46)", "rhs": "rho*log(a46)+sigma*(e+e46)"}}
+, {"residual": {"lhs": "T11", "rhs": "T19*T861"}}
+, {"residual": {"lhs": "log(a47)", "rhs": "rho*log(a47)+sigma*(e+e47)"}}
+, {"residual": {"lhs": "T11", "rhs": "T19*T879"}}
+, {"residual": {"lhs": "log(a48)", "rhs": "rho*log(a48)+sigma*(e+e48)"}}
+, {"residual": {"lhs": "T11", "rhs": "T19*T897"}}
+, {"residual": {"lhs": "log(a49)", "rhs": "rho*log(a49)+sigma*(e+e49)"}}
+, {"residual": {"lhs": "T11", "rhs": "T19*T915"}}
+, {"residual": {"lhs": "log(a50)", "rhs": "rho*log(a50)+sigma*(e+e50)"}}
+, {"residual": {"lhs": "k50+k49+k48+k47+k46+k45+k44+k43+k42+k41+k40+k39+k38+k37+k36+k35+k34+k33+k32+k31+k30+k29+k28+k27+k26+k25+k24+k23+k22+k21+k20+k19+k18+k17+k16+k15+k14+k13+k12+k11+k10+k9+k8+k7+k6+k5+k4+k3+k2+k1+c*N-k1*T23-T23*k2-T23*k3-T23*k4-T23*k5-T23*k6-T23*k7-T23*k8-T23*k9-T23*k10-T23*k11-T23*k12-T23*k13-T23*k14-T23*k15-T23*k16-T23*k17-T23*k18-T23*k19-T23*k20-T23*k21-T23*k22-T23*k23-T23*k24-T23*k25-T23*k26-T23*k27-T23*k28-T23*k29-T23*k30-T23*k31-T23*k32-T23*k33-T23*k34-T23*k35-T23*k36-T23*k37-T23*k38-T23*k39-T23*k40-T23*k41-T23*k42-T23*k43-T23*k44-T23*k45-T23*k46-T23*k47-T23*k48-T23*k49-T23*k50", "rhs": "a1*T1077+a2*T1079+a3*T1082+a4*T1085+a5*T1088+a6*T1091+a7*T1094+a8*T1097+a9*T1100+a10*T1103+a11*T1106+a12*T1109+a13*T1112+a14*T1115+a15*T1118+a16*T1121+a17*T1124+a18*T1127+a19*T1130+a20*T1133+a21*T1136+a22*T1139+a23*T1142+a24*T1145+a25*T1148+a26*T1151+a27*T1154+a28*T1157+a29*T1160+a30*T1163+a31*T1166+a32*T1169+a33*T1172+a34*T1175+a35*T1178+a36*T1181+a37*T1184+a38*T1187+a39*T1190+a40*T1193+a41*T1196+a42*T1199+a43*T1202+a44*T1205+a45*T1208+a46*T1211+a47*T1214+a48*T1217+a49*T1220+a50*T1223"}}
+
+]
+, "external_functions_temporary_terms_jacobian": [], "temporary_terms_jacobian": [{"temporary_term": "T1227", "value": "c(-gamma)"}
+, {"temporary_term": "T1228", "value": "beta*T1227"}
+, {"temporary_term": "T1340", "value": "1-T23"}
+], "jacobian": {  "nrows": 101, "ncols": 101, "entries": [{"row": 1, "col": 1, "val": "T1227-T30*T1228"}
+, {"row": 1, "col": 2, "val": "(-(T19*alpha*T28))"}
+, {"row": 1, "col": 3, "val": "(-(T19*alpha*a1*k1T27))"}
+, {"row": 2, "col": 2, "val": "1/a1-rho*1/a1"}
+, {"row": 3, "col": 1, "val": "T1227-T51*T1228"}
+, {"row": 3, "col": 4, "val": "(-(T19*alpha*T49))"}
+, {"row": 3, "col": 5, "val": "(-(T19*alpha*a2*k2T27))"}
+, {"row": 4, "col": 4, "val": "1/a2-rho*1/a2"}
+, {"row": 5, "col": 1, "val": "T1227-T69*T1228"}
+, {"row": 5, "col": 6, "val": "(-(T19*alpha*T67))"}
+, {"row": 5, "col": 7, "val": "(-(T19*alpha*a3*k3T27))"}
+, {"row": 6, "col": 6, "val": "1/a3-rho*1/a3"}
+, {"row": 7, "col": 1, "val": "T1227-T87*T1228"}
+, {"row": 7, "col": 8, "val": "(-(T19*alpha*T85))"}
+, {"row": 7, "col": 9, "val": "(-(T19*alpha*a4*k4T27))"}
+, {"row": 8, "col": 8, "val": "1/a4-rho*1/a4"}
+, {"row": 9, "col": 1, "val": "T1227-T105*T1228"}
+, {"row": 9, "col": 10, "val": "(-(T19*alpha*T103))"}
+, {"row": 9, "col": 11, "val": "(-(T19*alpha*a5*k5T27))"}
+, {"row": 10, "col": 10, "val": "1/a5-rho*1/a5"}
+, {"row": 11, "col": 1, "val": "T1227-T123*T1228"}
+, {"row": 11, "col": 12, "val": "(-(T19*alpha*T121))"}
+, {"row": 11, "col": 13, "val": "(-(T19*alpha*a6*k6T27))"}
+, {"row": 12, "col": 12, "val": "1/a6-rho*1/a6"}
+, {"row": 13, "col": 1, "val": "T1227-T141*T1228"}
+, {"row": 13, "col": 14, "val": "(-(T19*alpha*T139))"}
+, {"row": 13, "col": 15, "val": "(-(T19*alpha*a7*k7T27))"}
+, {"row": 14, "col": 14, "val": "1/a7-rho*1/a7"}
+, {"row": 15, "col": 1, "val": "T1227-T159*T1228"}
+, {"row": 15, "col": 16, "val": "(-(T19*alpha*T157))"}
+, {"row": 15, "col": 17, "val": "(-(T19*alpha*a8*k8T27))"}
+, {"row": 16, "col": 16, "val": "1/a8-rho*1/a8"}
+, {"row": 17, "col": 1, "val": "T1227-T177*T1228"}
+, {"row": 17, "col": 18, "val": "(-(T19*alpha*T175))"}
+, {"row": 17, "col": 19, "val": "(-(T19*alpha*a9*k9T27))"}
+, {"row": 18, "col": 18, "val": "1/a9-rho*1/a9"}
+, {"row": 19, "col": 1, "val": "T1227-T195*T1228"}
+, {"row": 19, "col": 20, "val": "(-(T19*alpha*T193))"}
+, {"row": 19, "col": 21, "val": "(-(T19*alpha*a10*k10T27))"}
+, {"row": 20, "col": 20, "val": "1/a10-rho*1/a10"}
+, {"row": 21, "col": 1, "val": "T1227-T213*T1228"}
+, {"row": 21, "col": 22, "val": "(-(T19*alpha*T211))"}
+, {"row": 21, "col": 23, "val": "(-(T19*alpha*a11*k11T27))"}
+, {"row": 22, "col": 22, "val": "1/a11-rho*1/a11"}
+, {"row": 23, "col": 1, "val": "T1227-T231*T1228"}
+, {"row": 23, "col": 24, "val": "(-(T19*alpha*T229))"}
+, {"row": 23, "col": 25, "val": "(-(T19*alpha*a12*k12T27))"}
+, {"row": 24, "col": 24, "val": "1/a12-rho*1/a12"}
+, {"row": 25, "col": 1, "val": "T1227-T249*T1228"}
+, {"row": 25, "col": 26, "val": "(-(T19*alpha*T247))"}
+, {"row": 25, "col": 27, "val": "(-(T19*alpha*a13*k13T27))"}
+, {"row": 26, "col": 26, "val": "1/a13-rho*1/a13"}
+, {"row": 27, "col": 1, "val": "T1227-T267*T1228"}
+, {"row": 27, "col": 28, "val": "(-(T19*alpha*T265))"}
+, {"row": 27, "col": 29, "val": "(-(T19*alpha*a14*k14T27))"}
+, {"row": 28, "col": 28, "val": "1/a14-rho*1/a14"}
+, {"row": 29, "col": 1, "val": "T1227-T285*T1228"}
+, {"row": 29, "col": 30, "val": "(-(T19*alpha*T283))"}
+, {"row": 29, "col": 31, "val": "(-(T19*alpha*a15*k15T27))"}
+, {"row": 30, "col": 30, "val": "1/a15-rho*1/a15"}
+, {"row": 31, "col": 1, "val": "T1227-T303*T1228"}
+, {"row": 31, "col": 32, "val": "(-(T19*alpha*T301))"}
+, {"row": 31, "col": 33, "val": "(-(T19*alpha*a16*k16T27))"}
+, {"row": 32, "col": 32, "val": "1/a16-rho*1/a16"}
+, {"row": 33, "col": 1, "val": "T1227-T321*T1228"}
+, {"row": 33, "col": 34, "val": "(-(T19*alpha*T319))"}
+, {"row": 33, "col": 35, "val": "(-(T19*alpha*a17*k17T27))"}
+, {"row": 34, "col": 34, "val": "1/a17-rho*1/a17"}
+, {"row": 35, "col": 1, "val": "T1227-T339*T1228"}
+, {"row": 35, "col": 36, "val": "(-(T19*alpha*T337))"}
+, {"row": 35, "col": 37, "val": "(-(T19*alpha*a18*k18T27))"}
+, {"row": 36, "col": 36, "val": "1/a18-rho*1/a18"}
+, {"row": 37, "col": 1, "val": "T1227-T357*T1228"}
+, {"row": 37, "col": 38, "val": "(-(T19*alpha*T355))"}
+, {"row": 37, "col": 39, "val": "(-(T19*alpha*a19*k19T27))"}
+, {"row": 38, "col": 38, "val": "1/a19-rho*1/a19"}
+, {"row": 39, "col": 1, "val": "T1227-T375*T1228"}
+, {"row": 39, "col": 40, "val": "(-(T19*alpha*T373))"}
+, {"row": 39, "col": 41, "val": "(-(T19*alpha*a20*k20T27))"}
+, {"row": 40, "col": 40, "val": "1/a20-rho*1/a20"}
+, {"row": 41, "col": 1, "val": "T1227-T393*T1228"}
+, {"row": 41, "col": 42, "val": "(-(T19*alpha*T391))"}
+, {"row": 41, "col": 43, "val": "(-(T19*alpha*a21*k21T27))"}
+, {"row": 42, "col": 42, "val": "1/a21-rho*1/a21"}
+, {"row": 43, "col": 1, "val": "T1227-T411*T1228"}
+, {"row": 43, "col": 44, "val": "(-(T19*alpha*T409))"}
+, {"row": 43, "col": 45, "val": "(-(T19*alpha*a22*k22T27))"}
+, {"row": 44, "col": 44, "val": "1/a22-rho*1/a22"}
+, {"row": 45, "col": 1, "val": "T1227-T429*T1228"}
+, {"row": 45, "col": 46, "val": "(-(T19*alpha*T427))"}
+, {"row": 45, "col": 47, "val": "(-(T19*alpha*a23*k23T27))"}
+, {"row": 46, "col": 46, "val": "1/a23-rho*1/a23"}
+, {"row": 47, "col": 1, "val": "T1227-T447*T1228"}
+, {"row": 47, "col": 48, "val": "(-(T19*alpha*T445))"}
+, {"row": 47, "col": 49, "val": "(-(T19*alpha*a24*k24T27))"}
+, {"row": 48, "col": 48, "val": "1/a24-rho*1/a24"}
+, {"row": 49, "col": 1, "val": "T1227-T465*T1228"}
+, {"row": 49, "col": 50, "val": "(-(T19*alpha*T463))"}
+, {"row": 49, "col": 51, "val": "(-(T19*alpha*a25*k25T27))"}
+, {"row": 50, "col": 50, "val": "1/a25-rho*1/a25"}
+, {"row": 51, "col": 1, "val": "T1227-T483*T1228"}
+, {"row": 51, "col": 52, "val": "(-(T19*alpha*T481))"}
+, {"row": 51, "col": 53, "val": "(-(T19*alpha*a26*k26T27))"}
+, {"row": 52, "col": 52, "val": "1/a26-rho*1/a26"}
+, {"row": 53, "col": 1, "val": "T1227-T501*T1228"}
+, {"row": 53, "col": 54, "val": "(-(T19*alpha*T499))"}
+, {"row": 53, "col": 55, "val": "(-(T19*alpha*a27*k27T27))"}
+, {"row": 54, "col": 54, "val": "1/a27-rho*1/a27"}
+, {"row": 55, "col": 1, "val": "T1227-T519*T1228"}
+, {"row": 55, "col": 56, "val": "(-(T19*alpha*T517))"}
+, {"row": 55, "col": 57, "val": "(-(T19*alpha*a28*k28T27))"}
+, {"row": 56, "col": 56, "val": "1/a28-rho*1/a28"}
+, {"row": 57, "col": 1, "val": "T1227-T537*T1228"}
+, {"row": 57, "col": 58, "val": "(-(T19*alpha*T535))"}
+, {"row": 57, "col": 59, "val": "(-(T19*alpha*a29*k29T27))"}
+, {"row": 58, "col": 58, "val": "1/a29-rho*1/a29"}
+, {"row": 59, "col": 1, "val": "T1227-T555*T1228"}
+, {"row": 59, "col": 60, "val": "(-(T19*alpha*T553))"}
+, {"row": 59, "col": 61, "val": "(-(T19*alpha*a30*k30T27))"}
+, {"row": 60, "col": 60, "val": "1/a30-rho*1/a30"}
+, {"row": 61, "col": 1, "val": "T1227-T573*T1228"}
+, {"row": 61, "col": 62, "val": "(-(T19*alpha*T571))"}
+, {"row": 61, "col": 63, "val": "(-(T19*alpha*a31*k31T27))"}
+, {"row": 62, "col": 62, "val": "1/a31-rho*1/a31"}
+, {"row": 63, "col": 1, "val": "T1227-T591*T1228"}
+, {"row": 63, "col": 64, "val": "(-(T19*alpha*T589))"}
+, {"row": 63, "col": 65, "val": "(-(T19*alpha*a32*k32T27))"}
+, {"row": 64, "col": 64, "val": "1/a32-rho*1/a32"}
+, {"row": 65, "col": 1, "val": "T1227-T609*T1228"}
+, {"row": 65, "col": 66, "val": "(-(T19*alpha*T607))"}
+, {"row": 65, "col": 67, "val": "(-(T19*alpha*a33*k33T27))"}
+, {"row": 66, "col": 66, "val": "1/a33-rho*1/a33"}
+, {"row": 67, "col": 1, "val": "T1227-T627*T1228"}
+, {"row": 67, "col": 68, "val": "(-(T19*alpha*T625))"}
+, {"row": 67, "col": 69, "val": "(-(T19*alpha*a34*k34T27))"}
+, {"row": 68, "col": 68, "val": "1/a34-rho*1/a34"}
+, {"row": 69, "col": 1, "val": "T1227-T645*T1228"}
+, {"row": 69, "col": 70, "val": "(-(T19*alpha*T643))"}
+, {"row": 69, "col": 71, "val": "(-(T19*alpha*a35*k35T27))"}
+, {"row": 70, "col": 70, "val": "1/a35-rho*1/a35"}
+, {"row": 71, "col": 1, "val": "T1227-T663*T1228"}
+, {"row": 71, "col": 72, "val": "(-(T19*alpha*T661))"}
+, {"row": 71, "col": 73, "val": "(-(T19*alpha*a36*k36T27))"}
+, {"row": 72, "col": 72, "val": "1/a36-rho*1/a36"}
+, {"row": 73, "col": 1, "val": "T1227-T681*T1228"}
+, {"row": 73, "col": 74, "val": "(-(T19*alpha*T679))"}
+, {"row": 73, "col": 75, "val": "(-(T19*alpha*a37*k37T27))"}
+, {"row": 74, "col": 74, "val": "1/a37-rho*1/a37"}
+, {"row": 75, "col": 1, "val": "T1227-T699*T1228"}
+, {"row": 75, "col": 76, "val": "(-(T19*alpha*T697))"}
+, {"row": 75, "col": 77, "val": "(-(T19*alpha*a38*k38T27))"}
+, {"row": 76, "col": 76, "val": "1/a38-rho*1/a38"}
+, {"row": 77, "col": 1, "val": "T1227-T717*T1228"}
+, {"row": 77, "col": 78, "val": "(-(T19*alpha*T715))"}
+, {"row": 77, "col": 79, "val": "(-(T19*alpha*a39*k39T27))"}
+, {"row": 78, "col": 78, "val": "1/a39-rho*1/a39"}
+, {"row": 79, "col": 1, "val": "T1227-T735*T1228"}
+, {"row": 79, "col": 80, "val": "(-(T19*alpha*T733))"}
+, {"row": 79, "col": 81, "val": "(-(T19*alpha*a40*k40T27))"}
+, {"row": 80, "col": 80, "val": "1/a40-rho*1/a40"}
+, {"row": 81, "col": 1, "val": "T1227-T753*T1228"}
+, {"row": 81, "col": 82, "val": "(-(T19*alpha*T751))"}
+, {"row": 81, "col": 83, "val": "(-(T19*alpha*a41*k41T27))"}
+, {"row": 82, "col": 82, "val": "1/a41-rho*1/a41"}
+, {"row": 83, "col": 1, "val": "T1227-T771*T1228"}
+, {"row": 83, "col": 84, "val": "(-(T19*alpha*T769))"}
+, {"row": 83, "col": 85, "val": "(-(T19*alpha*a42*k42T27))"}
+, {"row": 84, "col": 84, "val": "1/a42-rho*1/a42"}
+, {"row": 85, "col": 1, "val": "T1227-T789*T1228"}
+, {"row": 85, "col": 86, "val": "(-(T19*alpha*T787))"}
+, {"row": 85, "col": 87, "val": "(-(T19*alpha*a43*k43T27))"}
+, {"row": 86, "col": 86, "val": "1/a43-rho*1/a43"}
+, {"row": 87, "col": 1, "val": "T1227-T807*T1228"}
+, {"row": 87, "col": 88, "val": "(-(T19*alpha*T805))"}
+, {"row": 87, "col": 89, "val": "(-(T19*alpha*a44*k44T27))"}
+, {"row": 88, "col": 88, "val": "1/a44-rho*1/a44"}
+, {"row": 89, "col": 1, "val": "T1227-T825*T1228"}
+, {"row": 89, "col": 90, "val": "(-(T19*alpha*T823))"}
+, {"row": 89, "col": 91, "val": "(-(T19*alpha*a45*k45T27))"}
+, {"row": 90, "col": 90, "val": "1/a45-rho*1/a45"}
+, {"row": 91, "col": 1, "val": "T1227-T843*T1228"}
+, {"row": 91, "col": 92, "val": "(-(T19*alpha*T841))"}
+, {"row": 91, "col": 93, "val": "(-(T19*alpha*a46*k46T27))"}
+, {"row": 92, "col": 92, "val": "1/a46-rho*1/a46"}
+, {"row": 93, "col": 1, "val": "T1227-T861*T1228"}
+, {"row": 93, "col": 94, "val": "(-(T19*alpha*T859))"}
+, {"row": 93, "col": 95, "val": "(-(T19*alpha*a47*k47T27))"}
+, {"row": 94, "col": 94, "val": "1/a47-rho*1/a47"}
+, {"row": 95, "col": 1, "val": "T1227-T879*T1228"}
+, {"row": 95, "col": 96, "val": "(-(T19*alpha*T877))"}
+, {"row": 95, "col": 97, "val": "(-(T19*alpha*a48*k48T27))"}
+, {"row": 96, "col": 96, "val": "1/a48-rho*1/a48"}
+, {"row": 97, "col": 1, "val": "T1227-T897*T1228"}
+, {"row": 97, "col": 98, "val": "(-(T19*alpha*T895))"}
+, {"row": 97, "col": 99, "val": "(-(T19*alpha*a49*k49T27))"}
+, {"row": 98, "col": 98, "val": "1/a49-rho*1/a49"}
+, {"row": 99, "col": 1, "val": "T1227-T915*T1228"}
+, {"row": 99, "col": 100, "val": "(-(T19*alpha*T913))"}
+, {"row": 99, "col": 101, "val": "(-(T19*alpha*a50*k50T27))"}
+, {"row": 100, "col": 100, "val": "1/a50-rho*1/a50"}
+, {"row": 101, "col": 1, "val": "N"}
+, {"row": 101, "col": 2, "val": "(-T1077)"}
+, {"row": 101, "col": 3, "val": "T1340-a1*k1alpha"}
+, {"row": 101, "col": 4, "val": "(-T1079)"}
+, {"row": 101, "col": 5, "val": "T1340-a2*k2alpha"}
+, {"row": 101, "col": 6, "val": "(-T1082)"}
+, {"row": 101, "col": 7, "val": "T1340-a3*k3alpha"}
+, {"row": 101, "col": 8, "val": "(-T1085)"}
+, {"row": 101, "col": 9, "val": "T1340-a4*k4alpha"}
+, {"row": 101, "col": 10, "val": "(-T1088)"}
+, {"row": 101, "col": 11, "val": "T1340-a5*k5alpha"}
+, {"row": 101, "col": 12, "val": "(-T1091)"}
+, {"row": 101, "col": 13, "val": "T1340-a6*k6alpha"}
+, {"row": 101, "col": 14, "val": "(-T1094)"}
+, {"row": 101, "col": 15, "val": "T1340-a7*k7alpha"}
+, {"row": 101, "col": 16, "val": "(-T1097)"}
+, {"row": 101, "col": 17, "val": "T1340-a8*k8alpha"}
+, {"row": 101, "col": 18, "val": "(-T1100)"}
+, {"row": 101, "col": 19, "val": "T1340-a9*k9alpha"}
+, {"row": 101, "col": 20, "val": "(-T1103)"}
+, {"row": 101, "col": 21, "val": "T1340-a10*k10alpha"}
+, {"row": 101, "col": 22, "val": "(-T1106)"}
+, {"row": 101, "col": 23, "val": "T1340-a11*k11alpha"}
+, {"row": 101, "col": 24, "val": "(-T1109)"}
+, {"row": 101, "col": 25, "val": "T1340-a12*k12alpha"}
+, {"row": 101, "col": 26, "val": "(-T1112)"}
+, {"row": 101, "col": 27, "val": "T1340-a13*k13alpha"}
+, {"row": 101, "col": 28, "val": "(-T1115)"}
+, {"row": 101, "col": 29, "val": "T1340-a14*k14alpha"}
+, {"row": 101, "col": 30, "val": "(-T1118)"}
+, {"row": 101, "col": 31, "val": "T1340-a15*k15alpha"}
+, {"row": 101, "col": 32, "val": "(-T1121)"}
+, {"row": 101, "col": 33, "val": "T1340-a16*k16alpha"}
+, {"row": 101, "col": 34, "val": "(-T1124)"}
+, {"row": 101, "col": 35, "val": "T1340-a17*k17alpha"}
+, {"row": 101, "col": 36, "val": "(-T1127)"}
+, {"row": 101, "col": 37, "val": "T1340-a18*k18alpha"}
+, {"row": 101, "col": 38, "val": "(-T1130)"}
+, {"row": 101, "col": 39, "val": "T1340-a19*k19alpha"}
+, {"row": 101, "col": 40, "val": "(-T1133)"}
+, {"row": 101, "col": 41, "val": "T1340-a20*k20alpha"}
+, {"row": 101, "col": 42, "val": "(-T1136)"}
+, {"row": 101, "col": 43, "val": "T1340-a21*k21alpha"}
+, {"row": 101, "col": 44, "val": "(-T1139)"}
+, {"row": 101, "col": 45, "val": "T1340-a22*k22alpha"}
+, {"row": 101, "col": 46, "val": "(-T1142)"}
+, {"row": 101, "col": 47, "val": "T1340-a23*k23alpha"}
+, {"row": 101, "col": 48, "val": "(-T1145)"}
+, {"row": 101, "col": 49, "val": "T1340-a24*k24alpha"}
+, {"row": 101, "col": 50, "val": "(-T1148)"}
+, {"row": 101, "col": 51, "val": "T1340-a25*k25alpha"}
+, {"row": 101, "col": 52, "val": "(-T1151)"}
+, {"row": 101, "col": 53, "val": "T1340-a26*k26alpha"}
+, {"row": 101, "col": 54, "val": "(-T1154)"}
+, {"row": 101, "col": 55, "val": "T1340-a27*k27alpha"}
+, {"row": 101, "col": 56, "val": "(-T1157)"}
+, {"row": 101, "col": 57, "val": "T1340-a28*k28alpha"}
+, {"row": 101, "col": 58, "val": "(-T1160)"}
+, {"row": 101, "col": 59, "val": "T1340-a29*k29alpha"}
+, {"row": 101, "col": 60, "val": "(-T1163)"}
+, {"row": 101, "col": 61, "val": "T1340-a30*k30alpha"}
+, {"row": 101, "col": 62, "val": "(-T1166)"}
+, {"row": 101, "col": 63, "val": "T1340-a31*k31alpha"}
+, {"row": 101, "col": 64, "val": "(-T1169)"}
+, {"row": 101, "col": 65, "val": "T1340-a32*k32alpha"}
+, {"row": 101, "col": 66, "val": "(-T1172)"}
+, {"row": 101, "col": 67, "val": "T1340-a33*k33alpha"}
+, {"row": 101, "col": 68, "val": "(-T1175)"}
+, {"row": 101, "col": 69, "val": "T1340-a34*k34alpha"}
+, {"row": 101, "col": 70, "val": "(-T1178)"}
+, {"row": 101, "col": 71, "val": "T1340-a35*k35alpha"}
+, {"row": 101, "col": 72, "val": "(-T1181)"}
+, {"row": 101, "col": 73, "val": "T1340-a36*k36alpha"}
+, {"row": 101, "col": 74, "val": "(-T1184)"}
+, {"row": 101, "col": 75, "val": "T1340-a37*k37alpha"}
+, {"row": 101, "col": 76, "val": "(-T1187)"}
+, {"row": 101, "col": 77, "val": "T1340-a38*k38alpha"}
+, {"row": 101, "col": 78, "val": "(-T1190)"}
+, {"row": 101, "col": 79, "val": "T1340-a39*k39alpha"}
+, {"row": 101, "col": 80, "val": "(-T1193)"}
+, {"row": 101, "col": 81, "val": "T1340-a40*k40alpha"}
+, {"row": 101, "col": 82, "val": "(-T1196)"}
+, {"row": 101, "col": 83, "val": "T1340-a41*k41alpha"}
+, {"row": 101, "col": 84, "val": "(-T1199)"}
+, {"row": 101, "col": 85, "val": "T1340-a42*k42alpha"}
+, {"row": 101, "col": 86, "val": "(-T1202)"}
+, {"row": 101, "col": 87, "val": "T1340-a43*k43alpha"}
+, {"row": 101, "col": 88, "val": "(-T1205)"}
+, {"row": 101, "col": 89, "val": "T1340-a44*k44alpha"}
+, {"row": 101, "col": 90, "val": "(-T1208)"}
+, {"row": 101, "col": 91, "val": "T1340-a45*k45alpha"}
+, {"row": 101, "col": 92, "val": "(-T1211)"}
+, {"row": 101, "col": 93, "val": "T1340-a46*k46alpha"}
+, {"row": 101, "col": 94, "val": "(-T1214)"}
+, {"row": 101, "col": 95, "val": "T1340-a47*k47alpha"}
+, {"row": 101, "col": 96, "val": "(-T1217)"}
+, {"row": 101, "col": 97, "val": "T1340-a48*k48alpha"}
+, {"row": 101, "col": 98, "val": "(-T1220)"}
+, {"row": 101, "col": 99, "val": "T1340-a49*k49alpha"}
+, {"row": 101, "col": 100, "val": "(-T1223)"}
+, {"row": 101, "col": 101, "val": "T1340-a50*k50alpha"}
+]}, "external_functions_temporary_terms_hessian": [], "temporary_terms_hessian": [], "hessian": {  "nrows": 101, "ncols": 10201, "entries": []}, "external_functions_temporary_terms_third_derivatives": [], "temporary_terms_third_derivatives": [], "third_derivative": {  "nrows": 101, "ncols": 1030301, "entries": []}}}

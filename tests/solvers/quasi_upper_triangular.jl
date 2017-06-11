@@ -170,12 +170,6 @@ function A_mul_B!(c::AbstractVecOrMat, a::QuasiUpperTriangular, b::AbstractVecOr
 end
 
 function A_mul_B!(c::AbstractMatrix, alpha::Float64, a::QuasiUpperTriangular, b::AbstractMatrix)
-#    println("aa")
-#    display(a)
-#    println("")
-#    println("bb")
-#    display(b)
-#    println("")
     m, n = size(b)
     if size(a, 1) != m
         throw(DimensionMismatch("right hand side B needs first dimension of size $n, has size $(size(b,1))"))
@@ -189,9 +183,6 @@ function A_mul_B!(c::AbstractMatrix, alpha::Float64, a::QuasiUpperTriangular, b:
             c[i,j] += x*b[i-1,j]
         end
     end
-#    println("cc")
-#    display(c)
-#    println("")
     c
 end
 

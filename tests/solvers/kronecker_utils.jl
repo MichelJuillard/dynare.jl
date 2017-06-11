@@ -69,38 +69,40 @@ Performs (I_n^p \otimes a \otimes I_{m*n^q}) b, where n = size(a,2) and m, an ar
 function kron_mul_elem!(p::Int64, q::Int64, m::Int64, a::AbstractMatrix, b::AbstractVector, w::AbstractVector)
     n = size(a,2)
     length(b) == m*n^(p+q+1) || throw(DimensionMismatch("The dimension of the vector, $(length(b)) doesn't correspond to order, ($p, $q)  and the dimension of the matrix, $(size(a))"))
-    
-    if m == 1 && p + q == 0
-        # a*b
-        A_mul_B!(w,a,b)
-        copy!(b,w)
-    elseif m == 1 && q == 0
-        #  (I_n^p ⊗ a)*b = vec(a*[b_1 b_2 ... b_p])
-        np = n^p
-        b = convert(Array{Float64,2},reshape(b,n,np))
-        w = convert(Array{Float64,2},reshape(w,n,np))
-        A_mul_B!(w,a,b)
-        copy!(b,w)
-    elseif p == 0
-        # (a ⊗ I_{m*n^q})*b = (b'*(a' ⊗ I_{m*n^q}))' = vec(reshape(b,m*n^q,n)*a')
-        mnq = m*n^q
-        b = convert(Array{Float64,2},reshape(b,mnq,n))
-        w = convert(Array{Float64,2},reshape(w,mnq,n))
-        A_mul_Bt!(w,b,a)
-        copy!(b,w)
-    else
-        # (I_{n^p} ⊗ a ⊗ I_{m*n^q})*b = vec([(a ⊗ I_{m*n^q})*b_1 (a ⊗ I_{m*n^q})*b_2 ... (a ⊗ I_{m*n^q})*b_{n^p}])
-        mnq = m*n^q
-        mnq1 = mnq*n
-        qrange = 1:mnq1
-        b_orig = copy(b)
-        for i=1:n^p
-            bi = convert(Array{Float64,2},reshape(view(b,qrange),mnq,n))
-            wi = convert(Array{Float64,2},reshape(view(w,qrange),mnq,n))
-            # (a ⊗ I_{m*n^q})*b = (b'*(a' ⊗ I_{m*n^q}))' = vec(reshape(b',m*n^q,n)*a')
-            A_mul_Bt!(wi,bi,a)
-            copy!(bi,wi)
-            qrange += mnq1
+
+    @inbounds begin
+        if m == 1 && p + q == 0
+            # a*b
+            A_mul_B!(w,a,b)
+            copy!(b,w)
+        elseif m == 1 && q == 0
+            #  (I_n^p ⊗ a)*b = vec(a*[b_1 b_2 ... b_p])
+            np = n^p
+            b = convert(Array{Float64,2},reshape(b,n,np))
+            w = convert(Array{Float64,2},reshape(w,n,np))
+            A_mul_B!(w,a,b)
+            copy!(b,w)
+        elseif p == 0
+            # (a ⊗ I_{m*n^q})*b = (b'*(a' ⊗ I_{m*n^q}))' = vec(reshape(b,m*n^q,n)*a')
+            mnq = m*n^q
+            b = convert(Array{Float64,2},reshape(b,mnq,n))
+            w = convert(Array{Float64,2},reshape(w,mnq,n))
+            A_mul_Bt!(w,b,a)
+            copy!(b,w)
+        else
+            # (I_{n^p} ⊗ a ⊗ I_{m*n^q})*b = vec([(a ⊗ I_{m*n^q})*b_1 (a ⊗ I_{m*n^q})*b_2 ... (a ⊗ I_{m*n^q})*b_{n^p}])
+            mnq = m*n^q
+            mnq1 = mnq*n
+            qrange = 1:mnq1
+            b_orig = copy(b)
+            for i=1:n^p
+                bi = convert(Array{Float64,2},reshape(view(b,qrange),mnq,n))
+                wi = convert(Array{Float64,2},reshape(view(w,qrange),mnq,n))
+                # (a ⊗ I_{m*n^q})*b = (b'*(a' ⊗ I_{m*n^q}))' = vec(reshape(b',m*n^q,n)*a')
+                A_mul_Bt!(wi,bi,a)
+                copy!(bi,wi)
+                qrange += mnq1
+            end
         end
     end
 end
@@ -113,38 +115,40 @@ Performs (I_n^p \otimes a' \otimes I_{m*n^q}) b, where n = size(a,2) and m, an a
 function kron_mul_elem_t!(p::Int64, q::Int64, m::Int64, a::AbstractMatrix, b::AbstractVector, w::AbstractVector)
     n = size(a,2)
     length(b) == m*n^(p+q+1) || throw(DimensionMismatch("The dimension of the vector, $(length(b)) doesn't correspond to order, ($p, $q)  and the dimension of the matrix, $(size(a))"))
-    
-    if m == 1 && p + q == 0
-        # a'*b
-        At_mul_B!(w,a,b)
-        copy!(b,w)
-    elseif m == 1 && q == 0
-        #  (I_n^p ⊗ a')*b = vec(a*[b_1 b_2 ... b_p])
-        np = n^p
-        b = convert(Array{Float64,2},reshape(b,n,np))
-        w = convert(Array{Float64,2},reshape(w,n,np))
-        At_mul_B!(w,a,b)
-        copy!(b,w)
-    elseif p == 0
-        # (a' ⊗ I_{m*n^q})*b = (b'*(a ⊗ I_{m*n^q}))' = vec(reshape(b,m*n^q,n)*a)
-        mnq = m*n^q
-        b = convert(Array{Float64,2},reshape(b,mnq,n))
-        w = convert(Array{Float64,2},reshape(w,mnq,n))
-        A_mul_B!(w,b,a)
-        copy!(b,w)
-    else
-        # (I_{n^p} ⊗ a' ⊗ I_{m*n^q})*b = vec([(a' ⊗ I_{m*n^q})*b_1 (a' ⊗ I_{m*n^q})*b_2 ... (a' ⊗ I_{m*n^q})*b_{n^p}])
-        mnq = m*n^q
-        mnq1 = mnq*n
-        qrange = 1:mnq1
-        b_orig = copy(b)
-        for i=1:n^p
-            bi = convert(Array{Float64,2},reshape(view(b,qrange),mnq,n))
-            wi = convert(Array{Float64,2},reshape(view(w,qrange),mnq,n))
-            # (a' ⊗ I_{m*n^q})*b = (b'*(a ⊗ I_{m*n^q}))' = vec(reshape(b',m*n^q,n)*a)
-            A_mul_B!(wi,bi,a)
-            copy!(bi,wi)
-            qrange += mnq1
+
+    @inbounds begin
+        if m == 1 && p + q == 0
+            # a'*b
+            At_mul_B!(w,a,b)
+            copy!(b,w)
+        elseif m == 1 && q == 0
+            #  (I_n^p ⊗ a')*b = vec(a*[b_1 b_2 ... b_p])
+            np = n^p
+            b = convert(Array{Float64,2},reshape(b,n,np))
+            w = convert(Array{Float64,2},reshape(w,n,np))
+            At_mul_B!(w,a,b)
+            copy!(b,w)
+        elseif p == 0
+            # (a' ⊗ I_{m*n^q})*b = (b'*(a ⊗ I_{m*n^q}))' = vec(reshape(b,m*n^q,n)*a)
+            mnq = m*n^q
+            b = convert(Array{Float64,2},reshape(b,mnq,n))
+            w = convert(Array{Float64,2},reshape(w,mnq,n))
+            A_mul_B!(w,b,a)
+            copy!(b,w)
+        else
+            # (I_{n^p} ⊗ a' ⊗ I_{m*n^q})*b = vec([(a' ⊗ I_{m*n^q})*b_1 (a' ⊗ I_{m*n^q})*b_2 ... (a' ⊗ I_{m*n^q})*b_{n^p}])
+            mnq = m*n^q
+            mnq1 = mnq*n
+            qrange = 1:mnq1
+            b_orig = copy(b)
+            for i=1:n^p
+                bi = convert(Array{Float64,2},reshape(view(b,qrange),mnq,n))
+                wi = convert(Array{Float64,2},reshape(view(w,qrange),mnq,n))
+                # (a' ⊗ I_{m*n^q})*b = (b'*(a ⊗ I_{m*n^q}))' = vec(reshape(b',m*n^q,n)*a)
+                A_mul_B!(wi,bi,a)
+                copy!(bi,wi)
+                qrange += mnq1
+            end
         end
     end
 end
