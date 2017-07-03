@@ -40,9 +40,8 @@ nd = maximum(mod.lead_lag_incidence) + exo_nbr
 g1 = zeros(mod.eq_nbr,nd)
 g2 = zeros(mod.eq_nbr,nd*nd)
 
-mod.dynamic(y::Vector{Float64}, x::Matrix{Float64}, params::Vector{Float64},
-            steady_state::Vector{Float64}, it_::Int, residual::Vector{Float64},
-            g1::Matrix{Float64}, g2::Matrix{Float64})
+mod.dynamic(y, x, params,steady_state, it_, residual,
+            g1, g2)
 
 jacobian = copy(g1)
 
@@ -70,6 +69,12 @@ end
 options = Options(cr_opt,gs_opt)
 first_order_solver(first_order_ws,algo, g1, m, options)
 
+
+second_order_ws = SecondOrderSolverWS(endo_nbr,exo_nbr, m)
+
+second_order_solver!(jacobian, g2, m, first_order_ws, second_order_ws)
+
+if false                     
 a = zeros(endo_nbr,endo_nbr)
 b = zeros(endo_nbr,endo_nbr)
 a = jacobian[:,i2]
@@ -90,5 +95,6 @@ ws = EyePlusAtKronBWS(a,b,order,c)
 
 vd = view(d,:,1:(m.n_bkwrd+m.n_both)^2)
 general_sylvester_solver!(a,b,c,vd,order,ws)
+end
 
 end

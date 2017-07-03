@@ -50,4 +50,4 @@ end;
 
 check;
 
-stoch_simul(dr=cycle_reduction);
+stoch_simul(dr=cycle_reduction,order=2);
