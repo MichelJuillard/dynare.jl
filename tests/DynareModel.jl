@@ -41,18 +41,18 @@ end
 type dynare_model
     fname::String
     dynare_version::String
-    sigma_e::Array{Float64,2}
-    correlation_matrix::Array{Float64,2}
+    sigma_e::Matrix{Float64}
+    correlation_matrix::Matrix{Float64}
     orig_eq_nbr::Int64
     eq_nbr::Int64
     ramsey_eq_nbr::Int64
-    h::Array{Float64,2}
-    correlation_matrix_me::Array{Float64,2}
+    h::Matrix{Float64}
+    correlation_matrix_me::Matrix{Float64}
     endo::Vector{Endo}
     exo::Vector{Exo}
     param::Vector{Param}
     orig_endo_nbr::Int64
-    lead_lag_incidence::Array{Int64,2}
+    lead_lag_incidence::Matrix{Int64}
     nstatic::Int64
     nfwrd::Int64
     npred::Int64
@@ -82,18 +82,18 @@ type dynare_model
     function dynare_model()
         fname = ""
         dynare_version = ""
-        sigma_e = Array(Float64,0,0)
-        correlation_matrix = Array(Float64,0,0)
+        sigma_e = Matrix{Float64}(0,0)
+        correlation_matrix = Matrix{Float64}(0,0)
         orig_eq_nbr = 0
         eq_nbr = 0
         ramsey_eq_nbr = 0
-        h = Array(Float64,0,0)
-        correlation_matrix_me = Array(Float64,0,0)
+        h = Matrix{Float64}(0,0)
+        correlation_matrix_me = Matrix{Float64}(0,0)
         endo = []
         exo = []
         param = []
         orig_endo_nbr = 0
-        lead_lag_incidence = Array(Int64,0,0)
+        lead_lag_incidence = Matrix{Int64}(0,0)
         nstatic = 0
         nfwrd = 0
         npred = 0
