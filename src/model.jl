@@ -53,23 +53,23 @@ type Model
 end
 
 function Model(endo_nbr,lead_lag_incidence)
-    i_static = find((lead_lag_incidence[1,:] .== 0) & (lead_lag_incidence[3,:] .== 0))
+    i_static = find((lead_lag_incidence[1,:] .== 0) .& (lead_lag_incidence[3,:] .== 0))
     p_static = lead_lag_incidence[2,i_static]
-    i_dyn = find((lead_lag_incidence[1,:] .> 0) | (lead_lag_incidence[3,:] .> 0))
+    i_dyn = find((lead_lag_incidence[1,:] .> 0) .| (lead_lag_incidence[3,:] .> 0))
     n_static = length(i_static)
-    i_bkwrd = find((lead_lag_incidence[1,:] .> 0) & (lead_lag_incidence[3,:] .== 0))
+    i_bkwrd = find((lead_lag_incidence[1,:] .> 0) .& (lead_lag_incidence[3,:] .== 0))
     i_bkwrd_b = find((lead_lag_incidence[1,:] .> 0))
     i_bkwrd_ns = find(lead_lag_incidence[1,i_dyn] .> 0)
     p_bkwrd = lead_lag_incidence[1,i_bkwrd]
     p_bkwrd_b = lead_lag_incidence[1,i_bkwrd_b]
     n_bkwrd = length(i_bkwrd)
-    i_fwrd = find((lead_lag_incidence[3,:] .> 0) & (lead_lag_incidence[1,:] .== 0)) 
+    i_fwrd = find((lead_lag_incidence[3,:] .> 0) .& (lead_lag_incidence[1,:] .== 0)) 
     i_fwrd_b = find((lead_lag_incidence[3,:] .> 0)) 
     i_fwrd_ns = find(lead_lag_incidence[3,i_dyn] .> 0)
     p_fwrd = lead_lag_incidence[3,i_fwrd]
     p_fwrd_b = lead_lag_incidence[3,i_dyn[i_fwrd_ns]]
     n_fwrd = length(i_fwrd)
-    i_both = find((lead_lag_incidence[1,:] .> 0) & (lead_lag_incidence[3,:] .> 0)) 
+    i_both = find((lead_lag_incidence[1,:] .> 0) .& (lead_lag_incidence[3,:] .> 0)) 
     p_both_b = lead_lag_incidence[1,i_both]
     p_both_f = lead_lag_incidence[3,i_both]
     n_both = length(i_both)
