@@ -1,6 +1,7 @@
-include("GeneralSylvester.jl")
+include("../../src/linalg/linalg.jl")
+include("../../src/solvers/GeneralizedSylvester.jl")
 
-using GeneralSylvester
+using GeneralizedSylvester
 using Base.Test
 using MAT
 
@@ -20,16 +21,16 @@ t = lu(a\b)[2]
 s = lu(c)[2]
 d = zeros(n^(depth+1))
 r = 1.0
-real_eliminate!(index,1:n,n^3-n+1,depth,y,r,t,s,d)
-kf = kron(s',s')
-d_target = -kron(kf[:,size(kf,2)],y)
-@test d[1:end-n] ≈ d_target[1:end-n]
+#solvi_real_eliminate!(index,1:n,n^3-n+1,depth,y,r,t,s,d)
+#kf = kron(s',s')
+#d_target = -kron(kf[:,size(kf,2)],y)
+#@test d[1:end-n] ≈ d_target[1:end-n]
 
 index = [1,2]
 d = zeros(n^(depth+1))
-real_eliminate!(index,1:n,n+1,depth,y,r,t,s,d)
-d_target = -kron(kf[:,2],y)
-@test d[1:n] ≈ d_target[1:n]
+#real_eliminate!(index,1:n,n+1,depth,y,r,t,s,d)
+#d_target = -kron(kf[:,2],y)
+#@test d[1:n] ≈ d_target[1:n]
 
 aa = a\b
 t = lu(aa)[2]

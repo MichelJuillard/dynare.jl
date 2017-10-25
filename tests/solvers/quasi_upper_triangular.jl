@@ -4,8 +4,10 @@ import Base.size
 import Base.similar
 import Base.getindex
 import Base.setindex!
+import Base.broadcast
 import Base.copy
 import Base.convert
+import Base.real
 import Base.A_mul_B!, Base.At_mul_B!, Base.A_mul_Bt!
 import Base.LinAlg.BlasInt
 import Base.LinAlg.BLAS.@blasfunc
