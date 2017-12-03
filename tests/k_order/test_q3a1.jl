@@ -12,7 +12,6 @@ using .Dynare.model
 
 import .Dynare.DynLinAlg.Kronecker.a_mul_kron_b!
 
-
 cd("../models/q3a1")
 run(`/home/michel/dynare/git/master/dynare++/src/dynare++ --no-centralize q3a1.mod`)
 run(`/home/michel/dynare/git/master/matlab/preprocessor64/dynare_m q3a1.mod output=second language=julia`)
@@ -21,6 +20,8 @@ cd("../../k_order")
 vars = matread("../models/q3a1/q3a1.mat")
 
 ss = vars["dyn_steady_states"]
+
+g0 = vars["dyn_g_0"]
 g1 = vars["dyn_g_1"]
 g2 = vars["dyn_g_2"]
 
@@ -33,7 +34,6 @@ lli = mod.lead_lag_incidence
 
 m = Model(endo_nbr,lli,exo_nbr,0)
 
-
 ipre = find(mod.lead_lag_incidence[1,:])
 icur = find(mod.lead_lag_incidence[2,:])
 ifwd = find(mod.lead_lag_incidence[3,:])
@@ -45,7 +45,7 @@ y = [ss[ipre]; ss[icur]; ss[ifwd]]
 x = zeros(3,exo_nbr)
 params = mod.params
 steady_state = ss
-println(steady_state)
+
 it_ = 2
 residual = zeros(endo_nbr)
 nd = maximum(mod.lead_lag_incidence) + exo_nbr
@@ -60,7 +60,7 @@ order = 2
 
 moments = Array{Array{Float64,1}}(2)
 moments[1] = [0.0]
-moments[2] = vec(mod.sigma_e)
+moments[2] = vec(eye(exo_nbr))
 
 results_perturbation_ws = ResultsPerturbationWs(m,order)
 algo = "CR"
@@ -96,53 +96,43 @@ k_order_ws = KOrderWs(endo_nbr,length(ifwd),length(ipre),endo_nbr,exo_nbr,ifwd,i
 
 k_order_solution!(results_perturbation_ws.g, f, moments, 2, k_order_ws)
 
-display(g2)
-println(" ")
 g2a = Array{Float64}(endo_nbr, n_states + exo_nbr + 1, n_states + exo_nbr + 1)
 
-col = 1
+
 for i = 1:n_states + exo_nbr
-    println(" ")
+    if i <= n_states
+        col1 = inverse_order_states[i]
+    else
+        col1 = i
+    end
     for j = i:n_states + exo_nbr
-        println(col)
+        if j <= n_states
+            col2 = inverse_order_states[j]
+        else
+            col2 = j
+        end
+        if col1 > col2
+            c1 = col2
+            c2 = col1
+        else
+            c1 = col1
+            c2 = col2
+        end
+        col = round(Int64,(n_states + exo_nbr + 1)*(n_states + exo_nbr)/2 - (n_states + exo_nbr - c1 + 2)*(n_states + exo_nbr - c1 + 1)/2 + c2 - c1 + 1)
         for k = 1:endo_nbr
-            g2a[k, i, j] = g2[k,col]
+            g2a[k, i, j] = 2*g2[inverse_order_var[k], col]
             g2a[k, j, i] = g2a[k, i, j]
         end
-        col += 1
     end
 end
 g2b = reshape(g2a, endo_nbr, (n_states + exo_nbr + 1)^2)
 
+g2b[:,end] = 2*g0[inverse_order_var]
+        
 @test g2b ≈ results_perturbation_ws.g[2]
 
 using Base.Profile
 #@profile k_order_solution!(g,f,moments,2,k_order_ws)
 #@time k_order_solution!(g,f,moments,2,k_order_ws)
-
-
-    
-if false                     
-    a = zeros(endo_nbr,endo_nbr)
-    b = zeros(endo_nbr,endo_nbr)
-    a = jacobian[:,i2]
-    a[:,ipre] += jacobian[:,i1]*first_order_ws.ghx[ifwd,:]
-    b[:,icur] = jacobian[:,i2]
-    c = first_order_ws.ghx[ipre,:]
-    #c = randn(length(ipre),length(ipre))
-    nd1 = maximum(mod.lead_lag_incidence)
-    K = reshape(1:nd1*nd1,nd1,nd1)
-    gg = first_order_ws.ghx[ifwd,:]*first_order_ws.ghx[ipre,:]
-
-    d = zeros(endo_nbr,nd1*nd1)
-    order = 2
-    aa = g2[:,vec(K)]
-    bb = [gg;first_order_ws.ghx;eye(m.n_bkwrd+m.n_both)]
-    a_mul_kron_b!(d, aa, bb, order)
-    ws = EyePlusAtKronBWS(a,b,order,c)
-
-    vd = view(d,:,1:(m.n_bkwrd+m.n_both)^2)
-    general_sylvester_solver!(a,b,c,vd,order,ws)
-end
 
 end
