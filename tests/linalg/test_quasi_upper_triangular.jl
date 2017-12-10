@@ -1,6 +1,16 @@
 using Base.Test
 
-include("quasi_upper_triangular.jl")
+include("../../src/linalg/quasi_upper_triangular.jl")
+using QUT
+
+Aorig = [1 3; 0 2]
+A1 = [Aorig Aorig; zeros(2,2) Aorig]
+A = QuasiUpperTriangular(A1)
+B = randn(4,4)
+C = zeros(4,4)
+A_mul_B!(C, 1, B, 1, 4, 4, A, 1, 4)
+
+@test C ≈ B*A1
 
 Aorig = [1 3; 0.5 2]
 A = QuasiUpperTriangular(Aorig)
