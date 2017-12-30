@@ -96,6 +96,9 @@ k_order_ws = KOrderWs(endo_nbr,length(ifwd),length(ipre),endo_nbr,exo_nbr,ifwd,i
 
 k_order_solution!(results_perturbation_ws.g, f, moments, 2, k_order_ws)
 
+println("Timing k_order_solution!")
+@time k_order_solution!(results_perturbation_ws.g, f, moments, 2, k_order_ws)
+
 g2a = Array{Float64}(endo_nbr, n_states + exo_nbr + 1, n_states + exo_nbr + 1)
 
 

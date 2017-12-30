@@ -12,10 +12,10 @@ using .Dynare.model
 
 import .Dynare.DynLinAlg.Kronecker.a_mul_kron_b!
 
-cd("../models/q3a50")
-run(`/home/michel/dynare/git/master/dynare++/src/dynare++ --no-centralize q3a50.mod`)
+#cd("../models/q3a50")
+#run(`/home/michel/dynare/git/master/dynare++/src/dynare++ --no-centralize q3a50.mod`)
 #run(`/home/michel/dynare/git/master/matlab/preprocessor64/dynare_m q3a1.mod output=second language=julia`)
-cd("../../k_order")
+#cd("../../k_order")
 
 vars = matread("../models/q3a50/q3a50.mat")
 
@@ -96,6 +96,8 @@ n_states = m.n_bkwrd + m.n_both
 k_order_ws = KOrderWs(endo_nbr,length(ifwd),length(ipre),endo_nbr,exo_nbr,ifwd,ipre,collect(1:endo_nbr),1:length(ipre),2)
 
 k_order_solution!(results_perturbation_ws.g, f, moments, 2, k_order_ws)
+println("timing k_order_solution!")
+@time k_order_solution!(results_perturbation_ws.g, f, moments, 2, k_order_ws)
 
 g2a = Array{Float64}(endo_nbr, n_states + exo_nbr + 1, n_states + exo_nbr + 1)
 
@@ -129,7 +131,7 @@ g2b = reshape(g2a, endo_nbr, (n_states + exo_nbr + 1)^2)
 
 g2b[:,end] = 2*g0[inverse_order_var]
         
-#@test g2b[1:3,1:3] ≈ results_perturbation_ws.g[2][1:3,1:3]
+@test g2b[1:3,1:3] ≈ results_perturbation_ws.g[2][1:3,1:3]
 
 using Base.Profile
 #@profile k_order_solution!(g,f,moments,2,k_order_ws)
