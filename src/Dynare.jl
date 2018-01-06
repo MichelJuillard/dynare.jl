@@ -1,9 +1,15 @@
 module Dynare
 
+push!(LOAD_PATH, "./linalg")
+push!(LOAD_PATH, "./taylor")
+push!(LOAD_PATH, "./solvers")
+
+#include("model.jl")
+#using .model
+using model
+#export Model, get_de, get_abc
 using DynLinAlg
-include("model.jl")
-using .model
-export Model, get_de, get_abc
+using Solvers
 include("taylor/faadibruno.jl")
 include("solvers/solvers.jl")
 using .Solvers.ResultsPerturbationWs
