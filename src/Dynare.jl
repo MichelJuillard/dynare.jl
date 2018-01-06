@@ -1,7 +1,6 @@
 module Dynare
 
-include("linalg/linalg.jl")
-using .DynLinAlg
+using DynLinAlg
 include("model.jl")
 using .model
 export Model, get_de, get_abc
@@ -16,13 +15,13 @@ export EyePlusAtKronBWS, general_sylvester_solver!
 using .Solvers.KOrder
 export KOrderWs, k_order_solution!
 include("models/DynareModel.jl")
-using DynareModel
+using .DynareModel
 include("models/DynareOptions.jl")
-using DynareOptions
+using .DynareOptions
 include("models/DynareOutput.jl")
-using DynareOutput
+using .DynareOutput
 include("models/SteadyState.jl")
-using SteadyState
+using .SteadyState
 include("models/Utils.jl")
-using Utils
+using .Utils
 end

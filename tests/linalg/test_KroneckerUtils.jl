@@ -1,9 +1,8 @@
 import Base.BLAS: gemm!
 using Base.Test
-include("../../src/linalg/quasi_upper_triangular.jl")
+push!(LOAD_PATH, "../../src/linalg")
 using QUT
-include("../../src/linalg/kronecker_utils.jl")
-using Kronecker
+using KroneckerUtils
 
 srand(123)
 a = rand(2,3)
@@ -25,10 +24,10 @@ for m in [1, 3]
                 w = similar(d)
                 println("m = $m, p = $p, q = $q")
                 d = copy(d_orig)
-                @time Kronecker.kron_mul_elem_t!(w, a, d, n^p, n^q*m)
+                @time KroneckerUtils.kron_mul_elem_t!(w, a, d, n^p, n^q*m)
                 @test w ≈ kron(kron(eye(n^p),a'),eye(m*n^q))*d_orig
                 d = copy(d_orig)
-                @time Kronecker.kron_mul_elem_t!(w, t, d, n^p, n^q*m)
+                @time KroneckerUtils.kron_mul_elem_t!(w, t, d, n^p, n^q*m)
                 @test w ≈ kron(kron(eye(n^p),t'),eye(m*n^q))*d_orig
             end
         end
@@ -46,7 +45,7 @@ b_orig = copy(b)
 d = randn(ma,mc^order)
 w1 = Vector{Float64}(ma*mc^order)
 w2 = Vector{Float64}(ma*mc^order)
-Kronecker.a_mul_b_kron_c!(d, a, b, c, order, w1, w2)
+KroneckerUtils.a_mul_b_kron_c!(d, a, b, c, order, w1, w2)
 cc = c
 for i = 2:order
     cc = kron(cc,c)
@@ -54,7 +53,7 @@ end
 @test d ≈ a*b_orig*cc
 
 b = copy(b_orig)
-Kronecker.a_mul_kron_b!(d,b,c,order)
+KroneckerUtils.a_mul_kron_b!(d,b,c,order)
 cc = c
 for i = 2:order
     cc = kron(cc,c)
@@ -74,7 +73,7 @@ b2 = randn(mb2,nb2)
 b = [b1, b2]
 c = randn(ma,nb1*nb2)
 work = zeros(16)
-Kronecker.a_mul_kron_b!(c,a,b,work)
+KroneckerUtils.a_mul_kron_b!(c,a,b,work)
 @test c ≈ a*kron(b[1],b[2])
 
 order = 3
@@ -89,7 +88,7 @@ d = randn(2,2)
 work1 = zeros(mb*nb)
 work2 = zeros(mb*nb)
 e = randn(ma,8)
-Kronecker.a_mul_b_kron_c_d!(e, a, b, c, d, order, work1, work2)
+KroneckerUtils.a_mul_b_kron_c_d!(e, a, b, c, d, order, work1, work2)
 @test e ≈ a*b*kron(c,kron(d,d))
 
 order = 2
@@ -103,8 +102,8 @@ c = randn(ma*ma*nb)
 d = randn(na*na*mb)
 work1 = rand(na*na*mb)
 work2 = rand(na*na*mb)
-@time Kronecker.kron_at_kron_b_mul_c!(d, a, order, b, c, work1, work2)
-@time Kronecker.kron_at_kron_b_mul_c!(d, a, order, b, c, work1, work2)
+@time KroneckerUtils.kron_at_kron_b_mul_c!(d, a, order, b, c, work1, work2)
+@time KroneckerUtils.kron_at_kron_b_mul_c!(d, a, order, b, c, work1, work2)
 
 @test d ≈ kron(kron(a',a'),b)*c
 
@@ -118,15 +117,15 @@ b = rand(q*na^order)
 c = rand(q*ma^order)
 work1 = rand(q*max(ma, na)^order)
 work2 = similar(work1)
-Kronecker.kron_a_mul_b!(c, a, order, b, q, work1, work2)
-@time Kronecker.kron_a_mul_b!(c, a, order, b, q, work1, work2)
+KroneckerUtils.kron_a_mul_b!(c, a, order, b, q, work1, work2)
+@time KroneckerUtils.kron_a_mul_b!(c, a, order, b, q, work1, work2)
 @test c ≈ kron(kron(a,a),eye(q))*b
 
 println("test2")
 b = rand(q*ma^order)
 c = rand(q*na^order)
-Kronecker.kron_at_mul_b!(c, a, order, b, q, work1, work2)
-@time Kronecker.kron_at_mul_b!(c, a, order, b, q, work1, work2)
+KroneckerUtils.kron_at_mul_b!(c, a, order, b, q, work1, work2)
+@time KroneckerUtils.kron_at_mul_b!(c, a, order, b, q, work1, work2)
 @test c ≈ kron(kron(a',a'),eye(q))*b
 
 println("test3")
@@ -142,8 +141,8 @@ b = rand(na,nb)
 d = rand(ma,mc^order)
 work1 = rand(ma*max(mc, nc)^order)
 work2 = similar(work1)
-Kronecker.a_mul_b_kron_ct!(d, a, b, c, order, work1, work2)
-@time Kronecker.a_mul_b_kron_ct!(d, a, b, c, order, work1, work2)
+KroneckerUtils.a_mul_b_kron_ct!(d, a, b, c, order, work1, work2)
+@time KroneckerUtils.a_mul_b_kron_ct!(d, a, b, c, order, work1, work2)
 @test d ≈ a*b*kron(c',c')
 
 println("test4")
@@ -152,6 +151,6 @@ b = rand(ma,nb)
 d = rand(na,nc^order)
 work1 = rand(na*max(mc, nc)^order)
 work2 = similar(work1)
-Kronecker.at_mul_b_kron_c!(d, a, b, c, order, work1, work2)
-@time Kronecker.at_mul_b_kron_c!(d, a, b, c, order, work1, work2)
+KroneckerUtils.at_mul_b_kron_c!(d, a, b, c, order, work1, work2)
+@time KroneckerUtils.at_mul_b_kron_c!(d, a, b, c, order, work1, work2)
 @test d ≈ a'*b*kron(c,c)
