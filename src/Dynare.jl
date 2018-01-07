@@ -1,24 +1,21 @@
 module Dynare
 
-push!(LOAD_PATH, "./linalg")
-push!(LOAD_PATH, "./taylor")
-push!(LOAD_PATH, "./solvers")
-
-#include("model.jl")
-#using .model
-using model
-#export Model, get_de, get_abc
-using DynLinAlg
-using Solvers
-include("taylor/faadibruno.jl")
-include("solvers/solvers.jl")
+include("model.jl")
+using .model
+export Model, get_de, get_abc
+include("linalg/DynLinAlg.jl")
+using .DynLinAlg
+include("taylor/FaaDiBruno.jl")
+using .FaaDiBruno
+include("solvers/Solvers.jl")
+using .Solvers
 using .Solvers.ResultsPerturbationWs
 export ResultsPerturbationWs
-using .Solvers.FirstOrder
+using .Solvers.FirstOrderSolver
 export FirstOrderSolverWS, first_order_solver
-using .Solvers.GeneralizedSylvester
+using .Solvers.SolveEyePlusMinusAkronB
 export EyePlusAtKronBWS, general_sylvester_solver!
-using .Solvers.KOrder
+using .Solvers.KOrderSolver
 export KOrderWs, k_order_solution!
 include("models/DynareModel.jl")
 using .DynareModel
