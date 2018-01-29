@@ -1,3 +1,5 @@
+push!(LOAD_PATH,"../../src/")
+
 module TestQ3a1
 using Base.Test
 using BenchmarkTools
@@ -6,11 +8,7 @@ using MAT
 push!(LOAD_PATH,"../../src/models/")
 push!(LOAD_PATH,"../models/q3a1/")
 
-include("../../src/dynare.jl")
-using .Dynare
-using .Dynare.model
-
-import .Dynare.DynLinAlg.Kronecker.a_mul_kron_b!
+using Dynare
 
 cd("../models/q3a1")
 run(`/home/michel/dynare/git/master/dynare++/src/dynare++ --no-centralize q3a1.mod`)

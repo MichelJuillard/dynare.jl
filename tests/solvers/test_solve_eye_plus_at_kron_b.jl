@@ -333,29 +333,33 @@ function test1(m, n, order)
     @test kron_power(a,1) == a
     @test kron_power(a,3) ≈ kron(kron(a,a),a) 
 
+    println("SOLVI_REAL_ELIMINATE")
     drange = 1:nd
     for index = 1:(n-1)
         d_orig = copy(d)
-        GeneralizedSylvester.solvi_real_eliminate!(index, n, nd, drange, order-1, r, t, s, d, ws)
+        @time GeneralizedSylvester.solvi_real_eliminate!(index, n, nd, drange, order-1, r, t, s, d, ws)
         d_target = d_orig[(index*nd + 1): m*n^order]  - r*kron(s[index,(index+1):n],kron(kron_power(s',order-1),t))*d_orig[(index-1)*nd + (1:m*n^(order-1))]
         @test d_target ≈ d[(index*nd + 1): m*n^order]
         drange += nd
     end
 
+    println("SOLVI_COMPLEX_ELIMINATE")
     drange = 1:nd
-    for index = 1:(n-2)
+    for index = 1:2:(n-2)
+        println(index)
         d_orig = copy(d)
-        GeneralizedSylvester.solvi_complex_eliminate!(index, n, nd, drange, order-1, r, t, s, d, ws)
+        @time GeneralizedSylvester.solvi_complex_eliminate!(index, n, nd, drange, order-1, r, t, s, d, ws)
         d_target = (d_orig[(index+1)*nd + 1: m*n^order]  - r*kron(s[index,(index+2):n],kron(kron_power(s',order-1),t))*d_orig[(index-1)*nd + (1:m*n^(order-1))]
                     - r*kron(s[index + 1,(index+2):n],kron(kron_power(s',order-1),t))*d_orig[(index-1)*nd + m*n^(order-1) + (1:m*n^(order-1))])
         @test d_target ≈ d[(index+1)*nd + 1: m*n^order]
         drange += 2*nd
     end
-    
+
+    println("SOLVIIP_REAL_ELIMINATE")
     drange = 1:nd
     for index = 1:(n-1)
         d_orig = copy(d)
-        GeneralizedSylvester.solviip_real_eliminate!(index, n, nd, drange, order-1, alpha, beta, t, t2, s, s2, d, ws)
+        @time GeneralizedSylvester.solviip_real_eliminate!(index, n, nd, drange, order-1, alpha, beta, t, t2, s, s2, d, ws)
         d_target = (d_orig[(index*nd + 1): m*n^order]
                     - 2*alpha*kron(s[index,(index+1):n],kron(kron_power(s',order-1),t))*d_orig[(index-1)*nd + (1:m*n^(order-1))]
                     - (alpha^2 + beta^2)*kron(s2[index,(index+1):n],kron(kron_power(s2',order-1),t2))*d_orig[(index-1)*nd + (1:m*n^(order-1))])
@@ -363,10 +367,11 @@ function test1(m, n, order)
         drange += nd
     end
 
+    println("SOLVIIP_COMPLEX_ELIMINATE")
     drange = 1:nd
-    for index = 1:(n-2)
+    for index = 1:2:(n-2)
         d_orig = copy(d)
-        GeneralizedSylvester.solviip_complex_eliminate!(index, n, nd, drange, order-1, alpha, beta, t, t2, s, s2, d, ws)
+        @time GeneralizedSylvester.solviip_complex_eliminate!(index, n, nd, drange, order-1, alpha, beta, t, t2, s, s2, d, ws)
         d_target = (d_orig[(index+1)*nd + 1: m*n^order]
                     - 2*alpha*kron(s[index,(index+2):n],kron(kron_power(s',order-1),t))*d_orig[(index-1)*nd + (1:m*n^(order-1))]
                     - (alpha^2 + beta^2)*kron(s2[index,(index+2):n],kron(kron_power(s2',order-1),t2))*d_orig[(index-1)*nd + (1:m*n^(order-1))]
@@ -381,7 +386,7 @@ function test1(m, n, order)
     b1 = -rand()
     b2 = rand()
     d_orig = copy(d[1:2*m*n^(order-1)])
-    GeneralizedSylvester.transformation1(a,b1,b2,order-1,t,s,d,ws)
+    @time GeneralizedSylvester.transformation1(a,b1,b2,order-1,t,s,d,ws)
     d_target = d_orig + kron([a -b1; -b2 a],kron(kron_power(s',order-1),t))*d_orig
     @test d[1:2*m*n^(order-1)] ≈ d_target
 
@@ -396,7 +401,7 @@ function test1(m, n, order)
         d1 = randn(2*m*n^(order-1))
         nd1 = m*n^(order-2)
         d_orig = copy(d1[1:2*m*n^(order-2)])
-        GeneralizedSylvester.transform2(r1, r2, a, b1, b2, nd1, order-1, t, t2, s, s2, d1, ws)
+        @time GeneralizedSylvester.transform2(r1, r2, a, b1, b2, nd1, order-1, t, t2, s, s2, d1, ws)
         d_target = (eye(2*m*n^(order-2)) + 2*r1*kron([a b1; b2 a],kron(kron_power(s',(order-2)),t))
                     + (r1*r1 + r2*r2)*kron([a b1; b2 a]*[a b1; b2 a],kron(kron_power(s2',(order-2)),t2)))*d_orig
         @test d1[1:2*m*n^(order-2)] ≈ d_target
@@ -406,7 +411,7 @@ function test1(m, n, order)
     d_orig = copy(d)
     sreal = QuasiUpperTriangular(triu(s))
     sreal2 = QuasiUpperTriangular(sreal*sreal)
-    GeneralizedSylvester.solve1!(r,order,t,t2,sreal,sreal2,d,ws)
+    @time GeneralizedSylvester.solve1!(r,order,t,t2,sreal,sreal2,d,ws)
     d_target = (eye(m*n^order) + kron(kron_power(sreal',order),t))\d_orig
     @test d ≈ d_target
 
@@ -418,7 +423,7 @@ function test1(m, n, order)
 
         println("SOLVEIIP beta == 0 s, with real eigenvalues")
         beta1 = 0.0 
-        GeneralizedSylvester.solviip(alpha, beta1, order, t, t2, sreal, sreal2, d, ws)
+        @time GeneralizedSylvester.solviip(alpha, beta1, order, t, t2, sreal, sreal2, d, ws)
         d_target = (eye(m*n^order) + 2*alpha*kron(kron_power(sreal',order),t) + (alpha*alpha + beta1*beta1)*kron(kron_power(sreal2',order),t2))\d_orig
         @test d ≈ d_target
         
@@ -430,16 +435,16 @@ function test1(m, n, order)
         println("SOLVE1 complex eigenvalues case")
         d = randn(m*n^order)
         d_orig = copy(d)
-        GeneralizedSylvester.solve1!(r,order,t,t2,scplx,scplx2,d,ws)
+        @time GeneralizedSylvester.solve1!(r,order,t,t2,scplx,scplx2,d,ws)
         d_target = (eye(m*n^order) + kron(kron_power(scplx',order),t))\d_orig
         @test d ≈ d_target
     end
     
     println("SOLVEIIP with real eigenvalue")
     d_orig = copy(d)
-    GeneralizedSylvester.solviip(alpha, beta, order,
-                                 t, t2, sreal, sreal2,
-                                 d, ws)
+    @time GeneralizedSylvester.solviip(alpha, beta, order,
+                                       t, t2, sreal, sreal2,
+                                       d, ws)
 d_target = (eye(m*n^order)
             + 2*alpha*kron(kron_power(sreal',order),t)
             + (alpha*alpha + beta*beta)*kron(kron_power(sreal2',order),t2))\d_orig
@@ -452,7 +457,7 @@ a = randn()
 b1 = -rand()
 b2 = rand()
 G = [a b1; b2 a]
-GeneralizedSylvester.solviip2(alpha,beta,a,b2,b1,order,t,t2,s,s2,d,ws)
+@time GeneralizedSylvester.solviip2(alpha,beta,a,b2,b1,order,t,t2,s,s2,d,ws)
 d_target = (eye(2*m*n^(order-1)) + 2*alpha*kron(kron(G',kron_power(s',order-1)),t)
             + (alpha*alpha + beta*beta)*kron(kron(G'*G',kron_power(s2',order-1)),t2))\d_orig
 @test d ≈ d_target
@@ -461,10 +466,12 @@ d_target = (eye(2*m*n^(order-1)) + 2*alpha*kron(kron(G',kron_power(s',order-1)),
 println("SOLVE1 general case")
 d = randn(m*n^order)
 d_orig = copy(d)
-GeneralizedSylvester.solve1!(r,order,t,t2,s,s2,d,ws)
+@time GeneralizedSylvester.solve1!(r,order,t,t2,s,s2,d,ws)
 d_target = (eye(m*n^order) + kron(kron_power(s',order),t))\d_orig
 @test d ≈ d_target
 
 end
 
-test1(4,3,2)
+n=9
+test1(n,n,2)
+test1(n,n,2)

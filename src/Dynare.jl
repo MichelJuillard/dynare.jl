@@ -2,7 +2,7 @@ module Dynare
 
 include("model.jl")
 using .model
-export Model, get_de, get_abc
+export Model, get_de, get_abc, inverse_order_of_dynare_decision_rule
 include("linalg/DynLinAlg.jl")
 using .DynLinAlg
 include("taylor/FaaDiBruno.jl")
@@ -19,6 +19,7 @@ using .Solvers.KOrderSolver
 export KOrderWs, k_order_solution!
 include("models/DynareModel.jl")
 using .DynareModel
+export DynareModel
 include("models/DynareOptions.jl")
 using .DynareOptions
 include("models/DynareOutput.jl")

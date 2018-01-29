@@ -1,3 +1,5 @@
+push!(LOAD_PATH,"../../src/")
+
 module TestQ3a50
 using Base.Test
 using BenchmarkTools
@@ -6,11 +8,7 @@ using MAT
 push!(LOAD_PATH,"../../src/models/")
 push!(LOAD_PATH,"../models/q3a50/")
 
-include("../../src/dynare.jl")
-using .Dynare
-using .Dynare.model
-
-import .Dynare.DynLinAlg.Kronecker.a_mul_kron_b!
+using Dynare
 
 #cd("../models/q3a50")
 #run(`/home/michel/dynare/git/master/dynare++/src/dynare++ --no-centralize q3a50.mod`)
@@ -92,8 +90,14 @@ vg1_endo = view(g1_endo,inverse_order_var, inverse_order_states)
 n_states = m.n_bkwrd + m.n_both
 @test vg1_endo ≈ results_perturbation_ws.g[1][:,1:n_states]
 @test g1[inverse_order_var, n_states + (1:exo_nbr)] ≈ results_perturbation_ws.g[1][:, n_states + (1:exo_nbr)]
+if any(isinf.(results_perturbation_ws.g[1]))
+    println("g[1] is Inf 00")
+end
 
 k_order_ws = KOrderWs(endo_nbr,length(ifwd),length(ipre),endo_nbr,exo_nbr,ifwd,ipre,collect(1:endo_nbr),1:length(ipre),2)
+if any(isinf.(results_perturbation_ws.g[1]))
+    println("g[1] is Inf 0")
+end
 
 k_order_solution!(results_perturbation_ws.g, f, moments, 2, k_order_ws)
 println("timing k_order_solution!")
