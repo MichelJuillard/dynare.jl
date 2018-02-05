@@ -1,6 +1,6 @@
 using Base.Test
 
-include("../../src/linalg/quasi_upper_triangular.jl")
+push!(LOAD_PATH, "../../src/linalg")
 using QUT
 
 Aorig = [1 3; 0 2]
