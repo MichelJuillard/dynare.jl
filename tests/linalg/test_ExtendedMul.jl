@@ -1,4 +1,4 @@
-using Base.Test
+using Test
 push!(LOAD_PATH, "../../src/linalg")
 using ExtendedMul
 

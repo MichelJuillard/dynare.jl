@@ -1,4 +1,6 @@
-using Base.Test
+using Test
+using LinearAlgebra
+using Random
 
 push!(LOAD_PATH, "../../src/linalg")
 using QUT
@@ -14,17 +16,17 @@ A_mul_B!(C, 1, B, 1, 4, 4, A, 1, 4)
 
 Aorig = [1 3; 0.5 2]
 A = QuasiUpperTriangular(Aorig)
-B = eye(2)
+B = Matrix(1.0I, 2, 2)
 X = zeros(2,2)
 A_ldiv_B!(A,B)
 
 @test B ≈ inv(Aorig)
 
-B = eye(2)
+B = Matrix(1.0I, 2, 2)
 A_rdiv_Bt!(B,A)
-@test B ≈ inv(Aorig).'
+@test B ≈ transpose(inv(Aorig))
 
-B = eye(2)
+B = Matrix(1.0I, 2, 2)
 A_rdiv_B!(B,A)
 
 @test B ≈ inv(Aorig)
@@ -38,14 +40,14 @@ b = randn(n,n)
 c = similar(b)
 
 @test t*b ≈ A_mul_B!(QuasiUpperTriangular(t),b)
-@test t'*b ≈ At_mul_B!(QuasiUpperTriangular(t),b)
+@test transpose(t)*b ≈ At_mul_B!(QuasiUpperTriangular(t),b)
 @test b*t ≈ A_mul_B!(b,QuasiUpperTriangular(t))
-@test b*t' ≈ A_mul_Bt!(b,QuasiUpperTriangular(t))
+@test b*transpose(t) ≈ A_mul_Bt!(b,QuasiUpperTriangular(t))
 
 @test t*b ≈ A_mul_B!(c,QuasiUpperTriangular(t),b)
-@test t'*b ≈ At_mul_B!(c,QuasiUpperTriangular(t),b)
+@test transpose(t)*b ≈ At_mul_B!(c,QuasiUpperTriangular(t),b)
 @test b*t ≈ A_mul_B!(c,b,QuasiUpperTriangular(t))
-@test b*t' ≈ A_mul_Bt!(c,b,QuasiUpperTriangular(t))
+@test b*transpose(t) ≈ A_mul_Bt!(c,b,QuasiUpperTriangular(t))
 
 b1 = copy(b)
 x = zeros(n,n)
@@ -56,25 +58,25 @@ A_rdiv_B!(b1,QuasiUpperTriangular(t))
 @test b/t ≈ b1
 b1 = copy(b)
 A_rdiv_Bt!(b1,QuasiUpperTriangular(t))
-@test b/t.' ≈ b1
+@test b/transpose(t) ≈ b1
 
 b = rand(n)
 b1 = copy(b)
 r = rand()
 I_plus_rA_ldiv_B!(r,QuasiUpperTriangular(t),b1)
-@test b1 ≈ (eye(n) + r*t)\b
+@test b1 ≈ (Matrix(1.0I, n, n) + r*t)\b
 b1 = copy(b)
 s = rand()
 I_plus_rA_plus_sB_ldiv_C!(r,s,QuasiUpperTriangular(t),QuasiUpperTriangular(t*t),b1)
-@test b1 ≈ (eye(n) + r*t + s*t*t)\b
+@test b1 ≈ (Matrix(1.0I, n, n) + r*t + s*t*t)\b
 
 b = rand(n,n)
 b1 = copy(b)
 r = rand()
 I_plus_rA_ldiv_B!(r,QuasiUpperTriangular(t),b1)
-@test b1 ≈ (eye(n) + r*t)\b
+@test b1 ≈ (Matrix(1.0I, n, n) + r*t)\b
 b1 = copy(b)
 s = rand()
 I_plus_rA_plus_sB_ldiv_C!(r,s,QuasiUpperTriangular(t),QuasiUpperTriangular(t*t),b1)
-@test b1 ≈ (eye(n) + r*t + s*t*t)\b
+@test b1 ≈ (Matrix(1.0I, n, n) + r*t + s*t*t)\b
 
