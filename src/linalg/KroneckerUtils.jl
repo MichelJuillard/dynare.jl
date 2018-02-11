@@ -1,20 +1,20 @@
 module KroneckerUtils
 
-using Base.Test
 using ExtendedMul
 import Base.convert
 export a_mul_kron_b!, a_mul_b_kron_c!, kron_at_kron_b_mul_c!, a_mul_b_kron_c_d!, at_mul_b_kron_c!, a_mul_b_kron_ct!
-import Base.LinAlg: A_mul_B!, At_mul_B!, A_mul_Bt!, At_mul_Bt
-import Base.BLAS: gemm!
+import LinearAlgebra: A_mul_B!, At_mul_B!, A_mul_Bt!, At_mul_Bt
+#import Base.BLAS: gemm!
+using LinearAlgebra
 
-"""
-    a_mul_kron_b!(c::AbstractVector, a::AbstractVecOrMat, b::AbstractMatrix, order::Int64)
+#"""
+#    a_mul_kron_b!(c::AbstractVector, a::AbstractVecOrMat, b::AbstractMatrix, order::Int64)
 
-Performs a*(b ⊗ b ⊗ ... ⊗ b). The solution is returned in matrix c. order indicates the number of occurences of b
+#Performs a*(b ⊗ b ⊗ ... ⊗ b). The solution is returned in matrix c. order indicates the number of occurences of b
 
-We use vec(a*(b ⊗ b ⊗ ... ⊗ b)) = (b' ⊗ b' ⊗ ... ⊗ b' \otimes I)vec(a)
+#We use vec(a*(b ⊗ b ⊗ ... ⊗ b)) = (b' ⊗ b' ⊗ ... ⊗ b' \otimes I)vec(a)
 
-"""
+#"""
 function a_mul_kron_b!(c::AbstractMatrix, a::AbstractMatrix, b::AbstractMatrix, order::Int64, work1::AbstractVector, work2::AbstractVector)
     ma, na = size(a)
     mb, nb = size(b)
@@ -26,7 +26,7 @@ function a_mul_kron_b!(c::AbstractMatrix, a::AbstractMatrix, b::AbstractMatrix, 
     nc == nborder || throw(DimensionMismatch("The number of columns of c, $nc, doesn't match the number of columns of b, $nb, times order = $order"))
 
     # copy input
-    copy!(work1,a)
+    copyto!(work1,a)
     n1 = ma*na
     n2 = Int(n1*nb/mb)
     v1 = view(work1,1:n1)
@@ -42,7 +42,7 @@ function a_mul_kron_b!(c::AbstractMatrix, a::AbstractMatrix, b::AbstractMatrix, 
             v2 = view(v1parent,1:n2)
         end
     end
-    copy!(c,v2)
+    copyto!(c,v2)
 end
     
 function a_mul_kron_b!(c::AbstractMatrix, a::AbstractMatrix, b::AbstractMatrix, order::Int64)
@@ -63,7 +63,7 @@ function a_mul_kron_b!(c::AbstractMatrix, a::AbstractMatrix, b::AbstractMatrix, 
 #        vcvec = view(cvec,1:ma*mb^(order-q-1)*nb^(q+1))
         kron_mul_elem_t!(cvec,b,avec,mb^(order-q-1),nb^q*ma)
         if q < order - 1
-            copy!(avec,cvec)
+            copyto!(avec,cvec)
         end
     end
 end
@@ -84,18 +84,18 @@ function a_mul_b_kron_c!(d::AbstractMatrix, a::AbstractMatrix, b::AbstractMatrix
     na == mb || throw(DimensionMismatch("The number of columns of a, $(size(a,2)), doesn't match the number of rows of b, $(size(b,1))"))
     nb == mc^order || throw(DimensionMismatch("The number of columns of b, $(size(b,2)), doesn't match the number of rows of c, $(size(c,1)), times order, $order"))
     (ma == md && nc^order == nd) || throw(DimensionMismatch("Dimension mismatch for D: $(size(d)) while ($ma, $(nc^order)) was expected"))
-    A_mul_B!(reshape(view(work1,1:ma*nb),ma,nb),a,b)
+    mul!(reshape(view(work1,1:ma*nb),ma,nb),a,b)
     for q=0:order-1
         kron_mul_elem_t!(work2,c,work1,mc^(order-q-1),nc^q*ma)
         if q < order - 1
-            copy!(work1,work2)
+            copyto!(work1,work2)
         end
     end
-    copy!(d,work2)
+    copyto!(d,work2)
 end
 
 """
-    function kron_at_kron_b_mul_c!(d::AbstractVector, offset_c::Int64, a::AbstractMatrix, order::Int64, b::AbstractMatrix, c::AbstractVector, offset_cc::Int64, work1::AbstractVector, work2::AbstractVector)
+    function kron_at_kron_b_mul_c!(d::AbstractVector, offset_c::Int64, a::AbstractMatrix, order::Int64, b::AbstractMatrix, c::AbstractVector, offset_c::Int64, work1::AbstractVector, work2::AbstractVector)
 computes d = (a^T ⊗ a^T ⊗ ... ⊗ a^T ⊗ b)c using work vectors work1 and work2
 """ 
 function kron_at_kron_b_mul_c!(d::AbstractVector, offset_d::Int64, a::AbstractMatrix, order::Int64, b::AbstractMatrix, c::AbstractVector, offset_c::Int64, work1::AbstractVector, work2::AbstractVector, offset_w::Int64)
@@ -112,12 +112,12 @@ function kron_at_kron_b_mul_c!(d::AbstractVector, offset_d::Int64, a::AbstractMa
         for i = 1:order
             kron_mul_elem_t!(work2, offset_w, a, work1, 1, p, q)
             if i < order
-                copy!(work1, 1, work2, offset_w, p*na*q)
+                copyto!(work1, 1, work2, offset_w, p*na*q)
                 p = Int(p/ma)
                 q *= na
             end
         end
-        copy!(d, offset_d, work2, offset_w, p*na*q)
+        copyto!(d, offset_d, work2, offset_w, p*na*q)
     end
 end
 
@@ -139,23 +139,23 @@ function kron_at_kron_b_mul_c!(d::AbstractVector, a::AbstractMatrix, order::Int6
         for i = 1:order
             kron_mul_elem_t!(work2, a, work1, p, q)
             if i < order
-                copy!(work1, 1, work2, 1, p*na*q)
+                copyto!(work1, 1, work2, 1, p*na*q)
                 p = Int(p/ma)
                 q *= na
             end
         end
-        copy!(d,1,work2,1,p*na*q)
+        copyto!(d,1,work2,1,p*na*q)
     end
 end
 
 function kron_at_kron_b_mul_c!(a::AbstractMatrix, order::Int64, b::AbstractMatrix, c::AbstractVector, offset_c::Int64, work::AbstractVector)
     kron_at_kron_b_mul_c!(work, 1, a, order, b, c, offset_c, work, c, offset_c)
-    copy!(c, work)
+    copyto!(c, work)
 end
 
 function kron_at_kron_b_mul_c!(a::AbstractMatrix, order::Int64, b::AbstractMatrix, c::AbstractVector, work::AbstractVector)
     kron_at_kron_b_mul_c!(work, a, order, b, c, work, c)
-    copy!(c, work)
+    copyto!(c, work)
 end
 
 function kron_at_mul_b!(c::AbstractVector, a::AbstractMatrix, order::Int64, b::AbstractVector, q::Int64, work1::AbstractVector, work2::AbstractVector)
@@ -163,17 +163,17 @@ function kron_at_mul_b!(c::AbstractVector, a::AbstractMatrix, order::Int64, b::A
 #    length(work) == naorder*mb  || throw(DimensionMismatch("The dimension of vector , $(length(c)) doesn't correspond to order, ($order)  and the dimension of the matrices a, $(size(a)), and b, $(size(b))"))
     p = ma^(order-1)
     s = p*q*na
-    copy!(work1,b)
+    copyto!(work1,b)
     for i = 1:order
         kron_mul_elem_t!(work2, a, work1, p, q)
         if i < order
-            copy!(work1, 1, work2, 1, s)
+            copyto!(work1, 1, work2, 1, s)
             p = Int(p/ma)
             q *= na
             s = p*q*na
         end
     end
-    copy!(c,1,work2,1,s)
+    copyto!(c,1,work2,1,s)
 end
 
 function kron_a_mul_b!(c::AbstractVector, a::AbstractMatrix, order::Int64, b::AbstractVector, q::Int64, work1::AbstractVector, work2::AbstractVector)
@@ -181,17 +181,17 @@ function kron_a_mul_b!(c::AbstractVector, a::AbstractMatrix, order::Int64, b::Ab
 #    length(work) == naorder*mb  || throw(DimensionMismatch("The dimension of vector , $(length(c)) doesn't correspond to order, ($order)  and the dimension of the matrices a, $(size(a)), and b, $(size(b))"))
     p = na^(order-1)
     s = p*q*ma
-    copy!(work1,b)
+    copyto!(work1,b)
     for i = 1:order
         kron_mul_elem!(work2,a,work1,p,q)
         if i < order
-            copy!(work1, 1, work2, 1, s)
+            copyto!(work1, 1, work2, 1, s)
             p = Int(p/na)
             q *= ma
             s = p*q*ma
         end
     end
-    copy!(c,1,work2,1,s)
+    copyto!(c,1,work2,1,s)
 end
 
 function at_mul_b_kron_c!(d::AbstractMatrix, a::AbstractMatrix, b::AbstractMatrix, c::AbstractMatrix, order::Int64, work1::AbstractVector, work2::AbstractVector)
@@ -200,12 +200,6 @@ function at_mul_b_kron_c!(d::AbstractMatrix, a::AbstractMatrix, b::AbstractMatri
     mc, nc = size(c)
     if mc <= nc
         At_mul_B!(work1, 1, a, 1, na, ma, b, 1, nb)
-        display(a)
-        println(' ')
-        display(b)
-        println(' ')
-        display(reshape(work1[1:na*nb],na,nb))
-        println(' ')
         kron_at_mul_b!(vec(d), c, order, work1, na, vec(d), work2)
     else
         kron_at_mul_b!(work1, c, order, b, na, work1, work2)
@@ -242,7 +236,7 @@ function a_mul_kron_b!(c::AbstractMatrix, a::AbstractMatrix, b::AbstractVector,w
     nc == nborder || throw(DimensionMismatch("The number of columns of c, $nc, doesn't match the number of columns of matrices in b, $nborder"))
     mborder <= nborder || throw(DimensionMismatch("the product of the number of rows of the b matrices needs to be smaller or equal to the product of the number of columns. Otherwise, you need to call a_mul_kron_b!(c::AbstractMatrix, a::AbstractMatrix, b::Vector{AbstractMatrix},work::AbstractVector)"))
  
-    copy!(work,a)
+    copyto!(work,a)
     mb, nb = size(b[1])
     vwork = view(work,1:ma*na)
     cvec = vec(c)
@@ -258,7 +252,7 @@ function a_mul_kron_b!(c::AbstractMatrix, a::AbstractMatrix, b::AbstractVector,w
             p = Int(p/mb)
             q = q*nb
             vwork = view(work,1:mc)
-            copy!(vwork,vcvec)
+            copyto!(vwork,vcvec)
         end
     end
 end
@@ -286,22 +280,22 @@ function a_mul_b_kron_c_d!(e::AbstractMatrix, a::AbstractMatrix, b::AbstractMatr
      q = ma
      for i = 0:order - 2
         kron_mul_elem_t!(work2, 1, d, work1, 1, p, q)
-        copy!(work1,work2)
+        copyto!(work1,work2)
         p = Int(p/md)
         q *= nd
     end
     kron_mul_elem_t!(work2, c, work1, 1,q)
-    copy!(e, 1, work2, 1, ma*nc*nd^(order-1))
+    copyto!(e, 1, work2, 1, ma*nc*nd^(order-1))
 end
 
 convert(::Type{Array{Float64, 2}}, x::Base.ReshapedArray{Float64,2,SubArray{Float64,1,Array{Float64,1},Tuple{UnitRange{Int64}},true},Tuple{}}) = unsafe_wrap(Array,pointer(x.parent.parent,x.parent.indexes[1][1]),x.dims)
 
 
-"""
-    kron_mul_elem_t!(p::Int64, q::Int64, m::Int64, a::AbstractMatrix, b::AbstractVector, c::AbstractVector)
-
-Performs (I_p \otimes a \otimes I_q) b, where m,n = size(a). The result is stored in c.
-"""
+#"""
+#    kron_mul_elem_t!(p::Int64, q::Int64, m::Int64, a::AbstractMatrix, b::AbstractVector, c::AbstractVector)
+#
+#Performs (I_p \otimes a \otimes I_q) b, where m,n = size(a). The result is stored in c.
+#"""
 function kron_mul_elem!(c::AbstractVector, offset_c::Int64, a::AbstractMatrix, b::AbstractVector, offset_b::Int64, p::Int64, q::Int64)
     m, n = size(a)
     length(b) >= n*p*q || throw(DimensionMismatch("The dimension of vector b, $(length(b)) doesn't correspond to order, ($p, $q)  and the dimensions of the matrix, $(size(a))"))
@@ -331,11 +325,11 @@ function kron_mul_elem!(c::AbstractVector, offset_c::Int64, a::AbstractMatrix, b
 end
 
 
-"""
-    kron_mul_elem_t!(p::Int64, q::Int64, m::Int64, a::AbstractMatrix, b::AbstractVector, c::AbstractVector)
-
-Performs (I_p \otimes a' \otimes I_q) b, where m,n = size(a). The result is stored in c.
-"""
+#"""
+#    kron_mul_elem_t!(p::Int64, q::Int64, m::Int64, a::AbstractMatrix, b::AbstractVector, c::AbstractVector)
+#
+#Performs (I_p \otimes a' \otimes I_q) b, where m,n = size(a). The result is stored in c.
+#"""
 function kron_mul_elem_t!(c::Vector, offset_c::Int64, a::AbstractMatrix, b::Vector, offset_b::Int64, p::Int64, q::Int64)
     m, n = size(a)
     length(b) >= m*p*q || throw(DimensionMismatch("The dimension of vector b, $(length(b)) doesn't correspond to order, ($p, $q)  and the dimensions of the matrix, $(size(a))"))

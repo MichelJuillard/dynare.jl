@@ -1,8 +1,10 @@
-import Base.BLAS: gemm!
-using Base.Test
+using Random
+import LinearAlgebra.BLAS: gemm!
+using Test
 push!(LOAD_PATH, "../../src/linalg")
 using QUT
 using KroneckerUtils
+using LinearAlgebra
 
 srand(123)
 a = rand(2,3)
@@ -14,7 +16,7 @@ gemm!('N', 'N', 1.0, vec(a), 2, 3, vec(b), 4, 1.0, c)
 
 for m in [1, 3]
     for n in [3, 4]
-        a = randn(n,n)
+        global a = randn(n,n)
         t = QuasiUpperTriangular(schur(a)[1])
         depth = 4
         for p = 0:4
@@ -25,10 +27,10 @@ for m in [1, 3]
                 println("m = $m, p = $p, q = $q")
                 d = copy(d_orig)
                 @time KroneckerUtils.kron_mul_elem_t!(w, a, d, n^p, n^q*m)
-                @test w ≈ kron(kron(eye(n^p),a'),eye(m*n^q))*d_orig
+                @test w ≈ kron(kron(Matrix{Float64}(I,n^p,n^p),a'),Matrix{Float64}(I,m*n^q,m*n^q))*d_orig
                 d = copy(d_orig)
                 @time KroneckerUtils.kron_mul_elem_t!(w, t, d, n^p, n^q*m)
-                @test w ≈ kron(kron(eye(n^p),t'),eye(m*n^q))*d_orig
+                @test w ≈ kron(kron(Matrix{Float64}(I,n^p,n^p),t'),Matrix{Float64}(I,m*n^q,m*n^q))*d_orig
             end
         end
     end
@@ -43,12 +45,13 @@ c = randn(mc,mc)
 b = randn(na,mc^order)
 b_orig = copy(b)
 d = randn(ma,mc^order)
-w1 = Vector{Float64}(ma*mc^order)
-w2 = Vector{Float64}(ma*mc^order)
+w1 = Vector{Float64}(uninitialized, ma*mc^order)
+w2 = Vector{Float64}(uninitialized, ma*mc^order)
+
 KroneckerUtils.a_mul_b_kron_c!(d, a, b, c, order, w1, w2)
 cc = c
 for i = 2:order
-    cc = kron(cc,c)
+    global cc = kron(cc,c)
 end
 @test d ≈ a*b_orig*cc
 
@@ -56,7 +59,7 @@ b = copy(b_orig)
 KroneckerUtils.a_mul_kron_b!(d,b,c,order)
 cc = c
 for i = 2:order
-    cc = kron(cc,c)
+    global cc = kron(cc,c)
 end
 @test d ≈ b_orig*cc
 
@@ -119,14 +122,14 @@ work1 = rand(q*max(ma, na)^order)
 work2 = similar(work1)
 KroneckerUtils.kron_a_mul_b!(c, a, order, b, q, work1, work2)
 @time KroneckerUtils.kron_a_mul_b!(c, a, order, b, q, work1, work2)
-@test c ≈ kron(kron(a,a),eye(q))*b
+@test c ≈ kron(kron(a,a),Matrix{Float64}(I,q,q))*b
 
 println("test2")
 b = rand(q*ma^order)
 c = rand(q*na^order)
 KroneckerUtils.kron_at_mul_b!(c, a, order, b, q, work1, work2)
 @time KroneckerUtils.kron_at_mul_b!(c, a, order, b, q, work1, work2)
-@test c ≈ kron(kron(a',a'),eye(q))*b
+@test c ≈ kron(kron(a',a'),Matrix{Float64}(I,q,q))*b
 
 println("test3")
 order = 2
