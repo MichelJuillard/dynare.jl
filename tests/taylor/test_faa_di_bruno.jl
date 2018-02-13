@@ -1,6 +1,9 @@
 using ForwardDiff
 using Base.Test
 using TensorOperations
+push!(LOAD_PATH,"../../src/linalg")
+push!(LOAD_PATH,"../../src/taylor")
+using FaaDiBruno
 
 function f(x)
     [exp(x[1])*exp(2*x[2]), 2*exp(x[1])*exp(x[2])]
@@ -26,8 +29,6 @@ dfg2(x) = ForwardDiff.jacobian(dfg1,x)
 dfg3(x) = ForwardDiff.jacobian(dfg2,x)
 dfg4(x) = ForwardDiff.jacobian(dfg3,x)
 
-include("../../src/taylor/faadibruno.jl")
-using FaaDiBruno
 faadibruno_ws = FaaDiBrunoWs(2,2,3)
 println(faadibruno_ws.recipees[3][2])
 faadibruno_ws = FaaDiBrunoWs(2,2,4)
