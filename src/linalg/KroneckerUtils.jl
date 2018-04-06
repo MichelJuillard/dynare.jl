@@ -1,7 +1,6 @@
 module KroneckerUtils
 
 using Base.Test
-using ExtendedMul
 import Base.convert
 export a_mul_kron_b!, a_mul_b_kron_c!, kron_at_kron_b_mul_c!, a_mul_b_kron_c_d!, at_mul_b_kron_c!, a_mul_b_kron_ct!
 import Base.LinAlg: A_mul_B!, At_mul_B!, A_mul_Bt!, At_mul_Bt
@@ -12,7 +11,7 @@ import Base.BLAS: gemm!
 
 Performs a*(b ⊗ b ⊗ ... ⊗ b). The solution is returned in matrix c. order indicates the number of occurences of b
 
-We use vec(a*(b ⊗ b ⊗ ... ⊗ b)) = (b' ⊗ b' ⊗ ... ⊗ b' \otimes I)vec(a)
+We use vec(a*(b ⊗ b ⊗ ... ⊗ b)) = (b' ⊗ b' ⊗ ... ⊗ b' ⊗ I)vec(a)
 
 """
 function a_mul_kron_b!(c::AbstractMatrix, a::AbstractMatrix, b::AbstractMatrix, order::Int64, work1::AbstractVector, work2::AbstractVector)
@@ -300,7 +299,7 @@ convert(::Type{Array{Float64, 2}}, x::Base.ReshapedArray{Float64,2,SubArray{Floa
 """
     kron_mul_elem_t!(p::Int64, q::Int64, m::Int64, a::AbstractMatrix, b::AbstractVector, c::AbstractVector)
 
-Performs (I_p \otimes a \otimes I_q) b, where m,n = size(a). The result is stored in c.
+Performs (I_p ⊗ a ⊗ I_q) b, where m,n = size(a). The result is stored in c.
 """
 function kron_mul_elem!(c::AbstractVector, offset_c::Int64, a::AbstractMatrix, b::AbstractVector, offset_b::Int64, p::Int64, q::Int64)
     m, n = size(a)
@@ -334,7 +333,7 @@ end
 """
     kron_mul_elem_t!(p::Int64, q::Int64, m::Int64, a::AbstractMatrix, b::AbstractVector, c::AbstractVector)
 
-Performs (I_p \otimes a' \otimes I_q) b, where m,n = size(a). The result is stored in c.
+Performs (I_p ⊗ a' ⊗ I_q) b, where m,n = size(a). The result is stored in c.
 """
 function kron_mul_elem_t!(c::Vector, offset_c::Int64, a::AbstractMatrix, b::Vector, offset_b::Int64, p::Int64, q::Int64)
     m, n = size(a)

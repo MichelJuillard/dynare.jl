@@ -53,7 +53,7 @@ end
 finds the unique stable solution for the following system:
 
 ```
-d \left[\begin{array}{c}I\\g_2\end{array}\right]g_1 = e \left[\begin{array}{c}I\\g_2\end{array}\right]
+d \\left[\\begin{array}{c}I\\g_2\\end{array}\\right]g_1 = e \\left[\begin{array}{c}I\\\\g_2\\end{array}\\right]
 ```
 """
 function gs_solver!(ws::GsSolverWS,d::Matrix{Float64},e::Matrix{Float64},n1::Int64,qz_criterium::Float64)
