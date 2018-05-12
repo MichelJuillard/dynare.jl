@@ -1,7 +1,8 @@
 module FaaDiBruno
 using Combinatorics
 import Base: start, next, done
-using ..DynLinAlg.KroneckerUtils
+#using ..DynLinAlg.KroneckerUtils
+using KroneckerUtils
 
 export FaaDiBrunoWs, faa_di_bruno!, partial_faa_di_bruno!
 
@@ -36,16 +37,23 @@ function setup_recipees!(recipees::trecipees,order::Int)
         for j in 1:i
             r2 = Array{tatuple,1}(0)
             c = tatuple(0)
+            # all partitions of 1:i of length j
             p2 = collect(partitions(collect(1:i),j))
+            # sort partitions by length of subsets
             map!(x -> sort(x,by=length),p2,p2)
+            # patterns: length of each subset
             patterns = map(x->map(y->length(y),x),p2)
+            # p1j: integer_partitions(i) of length j
             p1j = filter(x->length(x) == j,p1)
             for k = 1:length(p1j)
+                # for each integer_partitions(i) of length j
                 p1jk = p1j[k]
                 r2 = Array{Array{Int,1},1}(0)
                 for m = 1:length(p2)
+                    # store all partitions with pattern equal to current integer partition
                     if patterns[m] == sort(p1jk)
                         v = multicat(p2[m])
+                        # store inverse permutation
                         push!(r2,ipermute!(collect(1:length(v)),v))
                     end
                 end
