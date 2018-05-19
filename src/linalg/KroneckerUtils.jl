@@ -199,12 +199,6 @@ function at_mul_b_kron_c!(d::AbstractMatrix, a::AbstractMatrix, b::AbstractMatri
     mc, nc = size(c)
     if mc <= nc
         At_mul_B!(work1, 1, a, 1, na, ma, b, 1, nb)
-        display(a)
-        println(' ')
-        display(b)
-        println(' ')
-        display(reshape(work1[1:na*nb],na,nb))
-        println(' ')
         kron_at_mul_b!(vec(d), c, order, work1, na, vec(d), work2)
     else
         kron_at_mul_b!(work1, c, order, b, na, work1, work2)
@@ -370,6 +364,10 @@ end
 #function kron_mul_elem_t!(c::Vector, a::SubArray{Float64,2,Array{Float64,2},Tuple{Base.Slice{Base.OneTo{Int64}},UnitRange{Int64}},true}, b::Vector, p::Int64, q::Int64)
 #    kron_mul_elem_t!(c, , a, b, 1, p, q)
 #end
+
+function kron_mul_elem_t!(c::SubArray{Float64,1,Array{Float64,1},Tuple{UnitRange{Int64}},true}, a::AbstractMatrix, b::Vector{Float64}, p::Int64, q::Int64)
+    kron_mul_elem_t!(c.parent, c.offset1 + 1, a, b, 1, p, q)
+end
 
 function kron_mul_elem_t!(c::SubArray{Float64,1,Array{Float64,1},Tuple{UnitRange{Int64}},true}, a::AbstractMatrix, b::SubArray{Float64,1,Array{Float64,1},Tuple{UnitRange{Int64}},true}, p::Int64, q::Int64)
     kron_mul_elem_t!(c.parent, c.offset1 + 1, a, b.parent, b.offset1 + 1, p, q)
