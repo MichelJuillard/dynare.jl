@@ -6,7 +6,7 @@ using ...DynLinAlg.LinSolveAlgo
 import Base.LinAlg.BLAS: gemm!
 import ...Solvers.SolveEyePlusMinusAkronB: EyePlusAtKronBWS, generalized_sylvester_solver!
 import ...FaaDiBruno: partial_faa_di_bruno!, FaaDiBrunoWs
-export make_gg!, make_hh!, k_order_solution!, KOrderWs
+export make_gg!, make_hh!, k_order_solution!, KOrderWs, number_of_unique_derivatives
 
 struct KOrderWs
     nvar::Integer
@@ -33,7 +33,7 @@ struct KOrderWs
     faa_di_bruno_ws_2::FaaDiBrunoWs
     linsolve_ws_1::LinSolveWS
     gs_ws::EyePlusAtKronBWS
-    function KOrderWs(nvar,nfwrd,nstate,ncur,nshock,fwrd_index,state_index,cur_index,state_range,order)
+    function KOrderWs(nvar, nfwrd, nstate, ncur, nshock, fwrd_index, state_index, cur_index, order)
         gfwrd = [zeros(nfwrd,(nstate+nshock+1)^i) for i = 1:order]
         gg = [zeros(nstate+nshock+1,(nstate+2*nshock+1)^i) for i = 1:order]
         hh = [zeros(nfwrd+nvar+nstate+nshock,(nstate+2*nshock+1)^i) for i = 1:order]
@@ -49,9 +49,19 @@ struct KOrderWs
         work1 = zeros(nvar*(nstate + nshock + 1)^order)
         work2 = similar(work1)
         gs_ws = EyePlusAtKronBWS(nvar,nvar,nstate,order)
-        new(nvar,nfwrd,nstate,ncur,nshock,fwrd_index,state_index,cur_index,state_range,gfwrd,gg,hh,
+        new(nvar,nfwrd,nstate,ncur,nshock,fwrd_index,state_index,cur_index,gfwrd,gg,hh,
             rhs,rhs1,gykf,gs_su,a,b,work1,work2,faa_di_bruno_ws_1,faa_di_bruno_ws_2,linsolve_ws_1, gs_ws)
     end
+end
+
+"""
+    function number_unique_derivatives(order::Int, nvar::Int)
+
+returns the number of unique order 'order' derivatives for 'nvar' variables. 
+This corresponds to the number of combinations with repetition of 'order' objects in a set of 'nvar' objects.
+"""    
+function number_of_unique_derivatives(order::Int, nvar::Int)
+    binomial(order + nvar - 1, order)
 end
 
 """
@@ -64,9 +74,6 @@ with respect to [y, u, σ, ϵ]
 function make_gg!(gg,g,order,ws)
     ngg1 = ws.nstate + 2*ws.nshock + 1
     mgg1 = ws.nstate + ws.nshock + 1
-    @assert size(gg[order]) == (mgg1, ngg1^order)
-    @assert size(g[order],2) == (ws.nstate + ws.nshock + 1)^order
-    @assert ws.state_range.stop <= size(g[order],1)
     if order == 1
         v2 = view(g[1],ws.state_index,:)
         copy!(gg[1],v2)
@@ -258,6 +265,12 @@ function make_gykf_1!(gykf::Matrix{Float64}, g::Matrix{Float64}, rs::Range{Int64
     end
 end
 
+"""
+    function make_gykf!(gykf::Matrix{Float64}, g::Matrix{Float64}, nstate::Int64, nfwrd::Int64, nshock::Int64, fwrd_index::Vector{Int64}, order::Int64)
+
+selects gykf: derivatives of g^(f) w.r. y^k
+"""
+
 function make_gykf!(gykf::Matrix{Float64}, g::Matrix{Float64}, nstate::Int64, nfwrd::Int64, nshock::Int64, fwrd_index::Vector{Int64}, order::Int64)
     rs = 1:nstate
     rd = 1:nstate
@@ -419,6 +432,82 @@ end
 function collect_future_shocks!()
 
 end
+
+"""
+xxxxxxxxxxxxxxxxxxxxxxxxxyyyyyyyyyyyyyyyyyyyyyyyyyuuuuuuuuuuuuuuuuuuuuuuuuuvvvvvvvvvvvvvvvvvvvvvvvvvsssssssssssssssssssssssss
+xxxxxyyyyyuuuuuvvvvvvssssxxxxxyyyyyuuuuuvvvvvvssssxxxxxyyyyyuuuuuvvvvvvssssxxxxxyyyyyuuuuuvvvvvvssssxxxxxyyyyyuuuuuvvvvvvssss
+xyuvsxyuvsxyuvsxyuvsxyuvsxyuvsxyuvsxyuvsxyuvsxyuvsxyuvsxyuvsxyuvsxyuvsxyuvsxyuvsxyuvsxyuvsxyuvsxyuvsxyuvsxyuvsxyuvsxyuvsxyuvs
+
+x1u1s1
+xxxxyyyy uuuuvvvvssssssss
+uvssuvss xyssxyssxxyyuuvv
+ssuvssuv sssxssxyuvuvxyxy
+
+start with each category for as many times as the have power
+"""
+
+function make_gfykσlΣm_1!(gfykσlΣ::Matrix{Float64}, g::Matrix{Float64}, Sigma::Vector{Float64}, rs::Range{Int64},
+                          rd1::Range{Int64}, rd2::Int64, nstate::Int64, nshock::Int64, inc::Int64,
+                          fwrd_index::Vector{Int64}, k::Int64, l::Int64, m::Int64, istate::Int64, gul::AbstractArray)
+    rs_ = rs
+    rd2_ = rd2
+    inc1 = inc^(k + l + m - 1)
+    if k > 0
+        n1 = number_of_unique_derivatives(k-1, nstate)
+        rs_ += (istate - 1)*inc1
+        for i = istate:nstate
+            make_gfykσlΣm_1!(gfykσlΣ, g, Sigma, rs_, rd1, rd2_, nstate, nshock, inc, fwrd_index, k - 1, l , m, i, gul)
+            rs_ += inc1
+            rd2_ += n1
+        end
+    else
+        make_gfykσlΣm_2!(gul, g, Sigma, rs_, rd1, nstate, nshock, inc, fwrd_index, k - 1, l , m)
+        v1 = view(gfykσlΣ,:,rd2)
+        A_mul_B!(v1, gul, Sigma)
+    end
+end
+
+function make_gfykσlΣm_2!(gul::AbstractArray, g::Matrix{Float64}, Sigma::Vector{Float64}, rs::Range{Int64},
+                          rd::Range{Int64}, nstate::Int64, nshock::Int64, inc::Int64,
+                          fwrd_index::Vector{Int64}, k::Int64, l::Int64, m::Int64)
+    
+    if l > 1
+        inc1 = inc^(l + m - 1)
+        rs_ = rs + nstate*inc1
+        rd_ = rd
+        n1 = nshock^(l-1)
+        for i = 1:nshock
+            make_gfykσlΣm_2!(gul, g, Sigma, rs_, rd_, nstate, nshock, inc, fwrd_index, k, l - 1, m)
+            rs_ += inc1
+            rd_ += n1
+        end
+    else
+        rs_ = rs + nstate*inc^m
+        v1 = view(g, fwrd_index, rs_)
+        v2 = view(gul, :, rd)
+        v2 .= v1
+    end
+end
+
+
+"""
+    function make_gfykfulσm!(gfykσlΣ::Matrix{Float64}, g::Matrix{Float64}, Sigma::Vector{Float64}, nstate::Int64, nfwrd::Int64, 
+                             nshock::Int64, fwrd_index::Vector{Int64}, order::Int64, gykfulσm::Matrix{Float64})
+
+    selects gykfulσm: derivatives of g^(f) w.r. y^ku^lσ^m
+"""
+
+function make_gfykσlΣm!(gfykσlΣ::Matrix{Float64}, g::Matrix{Float64}, Sigma::Vector{Float64}, nstate::Int64,
+                        nfwrd::Int64, nshock::Int64, fwrd_index::Vector{Int64},
+                        k::Int64, l::Int64, m::Int64, gykfulσm::AbstractArray)
+    inc = (nstate + nshock + 1)
+    inc1 = inc^m
+    rs = inc1:inc1:nshock*inc1
+    rd1 = 1:nshock
+    rd2 = 1
+    make_gfykσlΣm_1!(gfykσlΣ, g, Sigma, rs, rd1, rd2, nstate, nshock, inc, fwrd_index, k, l, m, 1, gykfulσm)
+end
+
 
 function make_gsk!(g::Vector{Matrix{Float64}},
                    f::Vector{Matrix{Float64}},
