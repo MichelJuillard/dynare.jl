@@ -1,14 +1,20 @@
 push!(LOAD_PATH,"../../src/")
+push!(LOAD_PATH,"../../src/solvers/")
+push!(LOAD_PATH,"../../src/linalg/")
+push!(LOAD_PATH,"../../src/taylor/")
 push!(LOAD_PATH,"../models/")
 
 module TestKOrderSolver
 using Dynare
-import Dynare.Solvers.KOrderSolver: KOrderWs, make_gg!, make_hh!, k_order_solution!, make_rhs_1!, make_rhs_2!, store_results_1!, make_gs_su!, make_gykf!, compute_derivatives_wr_shocks!, make_a1!, generalized_sylvester_solver!, store_results_2!, make_gsk!
+import Dynare.Solvers.KOrderSolver: KOrderWs, make_gg!, make_hh!, k_order_solution!, make_rhs_1!, make_rhs_2!, store_results_1!, make_gs_su!, make_gykf!, compute_derivatives_wr_shocks!, make_a1!, generalized_sylvester_solver!, store_results_2!, make_gsk!, number_of_unique_derivatives, make_gykfulσm!
 import Dynare.FaaDiBruno: FaaDiBrunoWs, partial_faa_di_bruno!
 import Dynare.DynLinAlg.LinSolveAlgo: LinSolveWS
 using Base.Test
 using ForwardDiff
 using BurnsideModel
+#using DynLinAlg
+#using Solvers
+#using KOrderSolver
 
 # variables order: x y
 
@@ -277,5 +283,25 @@ for i = 1:nstate1 - 1
 end
 @test gykf == x[fwrd_index1, k]
 
+
+nendo = 3
+nfwrd = 2
+nstate = 2
+nshock = 2
+fwrd_index = [1, 3]
+k = 1
+l = 1
+m = 1
+order = 3
+nn = nstate + nshock + 1
+g = randn(nendo, nn^order)
+gykfulσm = zeros(nfwrd, number_of_unique_derivatives(k,nstate)
+                 *nshock^l)
+    
+make_gykfulσm!(gykfulσm, g, nstate, nfwrd, nshock, fwrd_index,
+               k, l, m)
+println(nstate*nn + nstate + nshock + [1, nstate + nshock + 1])
+@test gykfulσm == g[fwrd_index,vcat(nstate*nn + nstate + nshock + [1, nstate + nshock + 2],              #x[uv]σ
+                                    nn*nn + nstate*nn + nstate + nshock + [1, nstate + nshock + 2])]     #y[uv]σ 
 
 end
