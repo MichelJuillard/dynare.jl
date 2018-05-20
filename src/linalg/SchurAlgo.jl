@@ -156,7 +156,6 @@ type DggesWS
               ldvsr, work, lwork, bwork,
               info)
         chklapackerror(info)
-        println(real(work[1]))
         lwork = BlasInt(real(work[1]))
         work = Vector{Float64}(lwork)
         new(alphar,alphai,beta,lwork,work,bwork,sdim)
