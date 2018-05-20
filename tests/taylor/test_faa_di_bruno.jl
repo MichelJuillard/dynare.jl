@@ -1,8 +1,10 @@
 using ForwardDiff
 using Base.Test
 using TensorOperations
+push!(LOAD_PATH,"../../src/")
 push!(LOAD_PATH,"../../src/linalg")
 push!(LOAD_PATH,"../../src/taylor")
+using Dynare
 using FaaDiBruno
 
 function f(x)
@@ -62,6 +64,9 @@ gg4 = reshape(gg[4],2,2,2,2,2)
 
 t10 = zeros(2,2,2,2,2)
 t20 = zeros(2,2,2,2,2)
+t20a = zeros(2,2,2,2,2)
+t20b = zeros(2,2,2,2,2)
+t20c = zeros(2,2,2,2,2)
 t30 = zeros(2,2,2,2,2)
 t30a = zeros(2,2,2,2,2)
 t30b = zeros(2,2,2,2,2)
@@ -75,6 +80,9 @@ t40 = zeros(2,2,2,2,2)
     t10[a,b,c,d,e] = ff1[a,f]*gg4[f,b,c,d,e]
     t20[a,b,c,d,e] = ff2[a,f,g]*gg2[f,b,c]*gg2[g,d,e] + ff2[a,f,g]*gg2[f,b,d]*gg2[g,c,e] + ff2[a,f,g]*gg2[f,b,e]*gg2[g,d,c] +
         ff2[a,f,g]*gg3[f,b,c,d]*gg1[g,e] +  ff2[a,f,g]*gg3[f,b,c,e]*gg1[g,d] +  ff2[a,f,g]*gg3[f,b,e,d]*gg1[g,c] +  ff2[a,f,g]*gg3[f,e,c,d]*gg1[g,b]
+    t20a[a,b,c,d,e] = ff2[a,f,g]*gg2[f,b,c]*gg2[g,d,e]
+    t20b[a,b,c,d,e] = ff2[a,f,g]*gg2[f,b,d]*gg2[g,c,e]
+    t20c[a,b,c,d,e] = ff2[a,f,g]*gg2[f,b,e]*gg2[g,d,c]
     t30[a,b,c,d,e] = ff3[a,f,g,h]*gg2[f,b,c]*gg1[g,d]*gg1[h,e] + ff3[a,f,g,h]*gg2[f,b,d]*gg1[g,c]*gg1[h,e] + ff3[a,f,g,h]*gg2[f,b,e]*gg1[g,d]*gg1[h,c] +
         ff3[a,f,g,h]*gg2[f,c,d]*gg1[g,b]*gg1[h,e] +ff3[a,f,g,h]*gg2[f,c,e]*gg1[g,d]*gg1[h,b] +ff3[a,f,g,h]*gg2[f,d,e]*gg1[g,b]*gg1[h,c]
     t30a[a,b,c,d,e] = ff3[a,f,g,h]*gg2[f,b,c]*gg1[g,d]*gg1[h,e]
@@ -89,7 +97,7 @@ t50 = t10 + t20 + t30 + t40
 t50 = reshape(t50,2,16)
 @test reshape(dfg4(x),2,16) ≈ t50
 
-import FaaDiBruno.Kronecker.a_mul_kron_b!
+import FaaDiBruno.KroneckerUtils.a_mul_kron_b!
 work1 = zeros(n,n^4)
 work2 = zeros(n^5)
 a_mul_kron_b!(work1,ff[3],gg[[2,1,1]],work2)
@@ -97,6 +105,7 @@ println("a_mul_kron_b!")
 println(work1[1])
 println("tensor product")
 println(t30a[1])
+a_mul_kron_b!(work1,ff[2],gg[[2,2]],work2)
 
 dfg = zeros(n,n^4)
 FaaDiBruno.apply_recipees!(dfg,faadibruno_ws.recipees[4][3],ff[3],gg,4,faadibruno_ws)
