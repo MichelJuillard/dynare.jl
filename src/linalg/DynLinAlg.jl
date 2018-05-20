@@ -1,5 +1,7 @@
 module DynLinAlg
 
+include("ExtendedMul.jl")
+using .ExtendedMul
 include("KroneckerUtils.jl")
 using .KroneckerUtils
 include("LinSolveAlgo.jl")
