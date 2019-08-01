@@ -1,23 +1,24 @@
 module ExtendedMul
 
-import LinearAlgebra: A_mul_B!, At_mul_B!, A_mul_Bt!, At_mul_Bt
+using LinearAlgebra
+import LinearAlgebra: mul!
 import LinearAlgebra.BLAS: gemm!
 
 import LinearAlgebra: BlasInt, BlasFloat
 import LinearAlgebra.BLAS: @blasfunc, libblas
 
-export A_mul_B!, At_mul_B!, A_mul_Bt!, At_mul_B!
-
-function A_mul_B!(c::VecOrMat{Float64}, offset_c::Int64, a::VecOrMat{Float64},
-                  offset_a::Int64, ma::Int64, na::Int64, b::VecOrMat{Float64},
-                  offset_b::Int64, nb::Int64)
+function mul!(c::VecOrMat{Float64}, offset_c::Int64, a::VecOrMat{Float64},
+              offset_a::Int64, ma::Int64, na::Int64, b::VecOrMat{Float64},
+              offset_b::Int64, nb::Int64)
 
     gemm!('N', 'N', 1.0, Ref(a, offset_a), ma, na, Ref(b, offset_b),
           nb, 0.0, Ref(c, offset_c))
 end
 
 
-function A_mul_B!(c::Array{Float64,1}, offset_c::Int64, a::SubArray{Float64,2,Array{Float64,2},Tuple{Base.Slice{Base.OneTo{Int64}},UnitRange{Int64}},true}, offset_a::Int64, ma::Int64, na::Int64, b::Array{Float64,1}, offset_b::Int64, nb::Int64)
+function mul!(c::Array{Float64,1}, offset_c::Int64,
+              a::SubArray{Float64,2,Array{Float64,2},Tuple{Base.Slice{Base.OneTo{Int64}},UnitRange{Int64}},true},
+              offset_a::Int64, ma::Int64, na::Int64, b::Array{Float64,1}, offset_b::Int64, nb::Int64)
     if offset_a != 1
         throw(DimensionMismatch("offset_a must be 1"))
     end
@@ -36,7 +37,9 @@ function A_mul_B!(c::Array{Float64,1}, offset_c::Int64, a::SubArray{Float64,2,Ar
           ma)
 end
 
-function A_mul_B!(c::Array{Float64,1}, offset_c::Int64, a::Array{Float64,1}, offset_a::Int64, ma::Int64, na::Int64, b::SubArray{Float64,2,Array{Float64,2},Tuple{Base.Slice{Base.OneTo{Int64}},UnitRange{Int64}},true}, offset_b::Int64, nb::Int64)
+function mul!(c::Array{Float64,1}, offset_c::Int64, a::Array{Float64,1}, offset_a::Int64, ma::Int64, na::Int64,
+              b::SubArray{Float64,2,Array{Float64,2},Tuple{Base.Slice{Base.OneTo{Int64}},UnitRange{Int64}},true},
+              offset_b::Int64, nb::Int64)
     if offset_b != 1
         throw(DimensionMismatch("offset_a must be 1"))
     end
@@ -51,9 +54,10 @@ function A_mul_B!(c::Array{Float64,1}, offset_c::Int64, a::Array{Float64,1}, off
           max(1,ma))
 end
 
-function At_mul_B!(c::VecOrMat{Float64}, offset_c::Int64, a::VecOrMat{Float64},
-                  offset_a::Int64, ma::Int64, na::Int64, b::VecOrMat{Float64},
-                   offset_b::Int64, nb::Int64)
+function mul!(c::VecOrMat{Float64}, offset_c::Int64, at::Transpose{<:Any,<:VecOrMat{Float64}},
+              offset_a::Int64, ma::Int64, na::Int64, b::VecOrMat{Float64},
+              offset_b::Int64, nb::Int64)
+    a = at.parent
     ccall((@blasfunc(dgemm_), libblas), Nothing,
           (Ref{UInt8}, Ref{UInt8}, Ref{BlasInt}, Ref{BlasInt},
            Ref{BlasInt}, Ref{Float64}, Ptr{Float64}, Ref{BlasInt},
@@ -65,9 +69,10 @@ function At_mul_B!(c::VecOrMat{Float64}, offset_c::Int64, a::VecOrMat{Float64},
           max(1,ma))
 end
 
-function A_mul_Bt!(c::VecOrMat{Float64}, offset_c::Int64, a::VecOrMat{Float64},
-                  offset_a::Int64, ma::Int64, na::Int64, b::VecOrMat{Float64},
-                  offset_b::Int64, nb::Int64)
+function mul!(c::VecOrMat{Float64}, offset_c::Int64, a::VecOrMat{Float64},
+              offset_a::Int64, ma::Int64, na::Int64, bt::Transpose{<:Any,<:VecOrMat{Float64}},
+              offset_b::Int64, nb::Int64)
+    b = bt.parent
     ccall((@blasfunc(dgemm_), libblas), Nothing,
           (Ref{UInt8}, Ref{UInt8}, Ref{BlasInt}, Ref{BlasInt},
            Ref{BlasInt}, Ref{Float64}, Ptr{Float64}, Ref{BlasInt},
@@ -79,10 +84,11 @@ function A_mul_Bt!(c::VecOrMat{Float64}, offset_c::Int64, a::VecOrMat{Float64},
           max(1,ma))
 end
 
-function At_mul_Bt!(c::VecOrMat{Float64}, offset_c::Int64, a::VecOrMat{Float64},
-                  offset_a::Int64, ma::Int64, na::Int64, b::VecOrMat{Float64},
-                  offset_b::Int64, nb::Int64)
-
+function mul!(c::VecOrMat{Float64}, offset_c::Int64, at::Transpose{<:Any,<:VecOrMat{Float64}},
+              offset_a::Int64, ma::Int64, na::Int64, bt::Transpose{<:Any,<:VecOrMat{Float64}},
+              offset_b::Int64, nb::Int64)
+    a = at.parent
+    b = bt.parent
     ccall((@blasfunc(dgemm_), libblas), Nothing,
           (Ref{UInt8}, Ref{UInt8}, Ref{BlasInt}, Ref{BlasInt},
            Ref{BlasInt}, Ref{Float64}, Ptr{Float64}, Ref{BlasInt},
