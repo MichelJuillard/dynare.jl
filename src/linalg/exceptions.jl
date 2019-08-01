@@ -1,4 +1,4 @@
-type SingularException <: Exception end
+struct SingularException <: Exception end
 
-type DggesException <: Exception end
+struct DggesException <: Exception end
 
