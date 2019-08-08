@@ -3,8 +3,6 @@ module KroneckerUtils
 using ExtendedMul
 import Base.convert
 export a_mul_kron_b!, a_mul_b_kron_c!, kron_at_kron_b_mul_c!, a_mul_b_kron_c_d!, at_mul_b_kron_c!, a_mul_b_kron_ct!
-#import LinearAlgebra: A_mul_B!, At_mul_B!, A_mul_Bt!, At_mul_Bt
-#import Base.BLAS: gemm!
 using LinearAlgebra
 
 #"""
