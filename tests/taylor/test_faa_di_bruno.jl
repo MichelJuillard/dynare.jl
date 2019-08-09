@@ -1,6 +1,9 @@
+push!(LOAD_PATH,"../src/taylor")
+push!(LOAD_PATH,"../src/linalg")
 using ForwardDiff
-using Base.Test
+using Test
 using TensorOperations
+using KroneckerUtils
 
 function f(x)
     [exp(x[1])*exp(2*x[2]), 2*exp(x[1])*exp(x[2])]
@@ -26,7 +29,6 @@ dfg2(x) = ForwardDiff.jacobian(dfg1,x)
 dfg3(x) = ForwardDiff.jacobian(dfg2,x)
 dfg4(x) = ForwardDiff.jacobian(dfg3,x)
 
-include("../../src/taylor/faadibruno.jl")
 using FaaDiBruno
 faadibruno_ws = FaaDiBrunoWs(2,2,3)
 println(faadibruno_ws.recipees[3][2])
@@ -35,7 +37,7 @@ println(faadibruno_ws.recipees[3][2])
 
 
 n = 2
-dfg=Matrix{Float64}(n,n^3)
+dfg=zeros(n, n^3)
 x = randn(n)
 ff=[ df1(g(x)), reshape(df2(g(x)),n,n*n), reshape(df3(g(x)),n,n^3), reshape(df4(g(x)),n,n^4)]
 gg=[ dg1(x), reshape(dg2(x),n,n*n), reshape(dg3(x),n,n^3), reshape(dg4(x),n,n^4)]
@@ -56,7 +58,7 @@ gg3 = reshape(gg[3],2,2,2,2)
 gg4 = reshape(gg[4],2,2,2,2,2)
 
 @tensor t3[a,b,c,d] = ff2[a,e,f]*gg2[e,b,c]*gg1[f,d] + ff2[a,e,f]*gg2[e,b,d]*gg1[f,c] + ff2[a,e,f]*gg2[e,d,c]*gg1[f,b]
-    
+
 @test dfg ≈ reshape(t3,2,8)
 
 t10 = zeros(2,2,2,2,2)
@@ -88,7 +90,6 @@ t50 = t10 + t20 + t30 + t40
 t50 = reshape(t50,2,16)
 @test reshape(dfg4(x),2,16) ≈ t50
 
-import FaaDiBruno.Kronecker.a_mul_kron_b!
 work1 = zeros(n,n^4)
 work2 = zeros(n^5)
 a_mul_kron_b!(work1,ff[3],gg[[2,1,1]],work2)
