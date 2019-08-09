@@ -1,4 +1,4 @@
-push!(LOAD_PATH,"../../src/linalg/")
+push!(LOAD_PATH,"../src/linalg/")
 using LinearAlgebra
 using SchurAlgo
 using Test

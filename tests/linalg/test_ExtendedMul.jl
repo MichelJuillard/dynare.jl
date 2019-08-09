@@ -1,5 +1,5 @@
 using Test
-push!(LOAD_PATH, "../../src/linalg")
+push!(LOAD_PATH, "../src/linalg")
 using ExtendedMul
 using LinearAlgebra
 

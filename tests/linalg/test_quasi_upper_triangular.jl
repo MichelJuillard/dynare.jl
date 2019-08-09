@@ -2,7 +2,7 @@ using Test
 using LinearAlgebra
 using Random
 
-push!(LOAD_PATH, "../../src/linalg")
+push!(LOAD_PATH, "../src/linalg")
 using QUT
 
 Aorig = [1 3; 0 2]
@@ -10,7 +10,7 @@ A1 = [Aorig Aorig; zeros(2,2) Aorig]
 A = QuasiUpperTriangular(A1)
 B = randn(4,4)
 C = zeros(4,4)
-A_mul_B!(C, 1, B, 1, 4, 4, A, 1, 4)
+mul!(C, 1, B, 1, 4, 4, A, 1, 4)
 
 @test C ≈ B*A1
 
@@ -18,46 +18,45 @@ Aorig = [1 3; 0.5 2]
 A = QuasiUpperTriangular(Aorig)
 B = Matrix(1.0I, 2, 2)
 X = zeros(2,2)
-A_ldiv_B!(A,B)
+ldiv!(A,B)
 
 @test B ≈ inv(Aorig)
 
 B = Matrix(1.0I, 2, 2)
-A_rdiv_Bt!(B,A)
+rdiv!(B,transpose(A))
 @test B ≈ transpose(inv(Aorig))
 
 B = Matrix(1.0I, 2, 2)
-A_rdiv_B!(B,A)
+rdiv!(B,A)
 
 @test B ≈ inv(Aorig)
 
-srand(123)
 n = 7
 a = randn(n,n)
 S = schur(a)
-t = S[1]
+t = S.Schur
 b = randn(n,n)
 c = similar(b)
 
-@test t*b ≈ A_mul_B!(QuasiUpperTriangular(t),b)
-@test transpose(t)*b ≈ At_mul_B!(QuasiUpperTriangular(t),b)
-@test b*t ≈ A_mul_B!(b,QuasiUpperTriangular(t))
-@test b*transpose(t) ≈ A_mul_Bt!(b,QuasiUpperTriangular(t))
+@test t*b ≈ mul!(QuasiUpperTriangular(t),b)
+@test transpose(t)*b ≈ mul!(transpose(QuasiUpperTriangular(t)),b)
+@test b*t ≈ mul!(b,QuasiUpperTriangular(t))
+@test b*transpose(t) ≈ mul!(b,transpose(QuasiUpperTriangular(t)))
 
-@test t*b ≈ A_mul_B!(c,QuasiUpperTriangular(t),b)
-@test transpose(t)*b ≈ At_mul_B!(c,QuasiUpperTriangular(t),b)
-@test b*t ≈ A_mul_B!(c,b,QuasiUpperTriangular(t))
-@test b*transpose(t) ≈ A_mul_Bt!(c,b,QuasiUpperTriangular(t))
+@test t*b ≈ mul!(c,QuasiUpperTriangular(t),b)
+@test transpose(t)*b ≈ mul!(c,transpose(QuasiUpperTriangular(t)),b)
+@test b*t ≈ mul!(c,b,QuasiUpperTriangular(t))
+@test b*transpose(t) ≈ mul!(c,b,transpose(QuasiUpperTriangular(t)))
 
 b1 = copy(b)
 x = zeros(n,n)
-A_ldiv_B!(QuasiUpperTriangular(t),b1)
+ldiv!(QuasiUpperTriangular(t),b1)
 @test t\b ≈ b1
 b1 = copy(b)
-A_rdiv_B!(b1,QuasiUpperTriangular(t))
+rdiv!(b1,QuasiUpperTriangular(t))
 @test b/t ≈ b1
 b1 = copy(b)
-A_rdiv_Bt!(b1,QuasiUpperTriangular(t))
+rdiv!(b1,transpose(QuasiUpperTriangular(t)))
 @test b/transpose(t) ≈ b1
 
 b = rand(n)

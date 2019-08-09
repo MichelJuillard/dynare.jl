@@ -1,7 +1,7 @@
 using Random
 import LinearAlgebra.BLAS: gemm!
 using Test
-push!(LOAD_PATH, "../../src/linalg")
+push!(LOAD_PATH, "../src/linalg")
 using QUT
 using KroneckerUtils
 using LinearAlgebra
