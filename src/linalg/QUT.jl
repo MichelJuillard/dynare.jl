@@ -6,7 +6,7 @@ import Base.similar
 import Base.getindex
 import Base.setindex!
 import Base.copy
-import LinearAlgebra: A_mul_B!, At_mul_B!, A_mul_Bt!, A_ldiv_B!, A_rdiv_B!, A_rdiv_Bt!
+import LinearAlgebra: mul!, ldiv!, rdiv!
 import LinearAlgebra.BlasInt
 import LinearAlgebra.BLAS.@blasfunc
 import LinearAlgebra.BLAS.libblas
@@ -37,7 +37,7 @@ size(A::QuasiUpperTriangular) = size(A.data)
 similar(A::QuasiUpperTriangular, ::Type{T}) where {T} = QuasiUpperTriangular(similar(parent(A), T))
 # On the other hand, similar(A, [neweltype,] shape...) should yield a matrix of the underlying
 # storage type of A (not wrapped in a triangular type). The following method covers these cases.
-similar(A::QuasiUpperTriangular, ::Type{T}, dims::Dims{N}) where {T,N} = similar(parent(A), T, dims)
+#similar(A::QuasiUpperTriangular, ::Type{T}, dims::Dims{N}) where {T,N} = similar(parent(A), T, dims)
 
 copy(A::QuasiUpperTriangular) = QuasiUpperTriangular(copy(A.data))
 
@@ -60,10 +60,10 @@ function setindex!(A::QuasiUpperTriangular, x, i::Integer, j::Integer)
 end
 
 ## Generic quasi triangular multiplication
-function A_mul_B!(a::QuasiUpperTriangular,b::AbstractVector,work::AbstractVector)
+function mul!(a::QuasiUpperTriangular,b::AbstractVector,work::AbstractVector)
     if size(a,1) < 27
         # pure Julia is faster
-        A_mul_B!(a,b)
+        mul!(a,b)
         return
     end
     copyto!(work,b)
@@ -73,7 +73,7 @@ function A_mul_B!(a::QuasiUpperTriangular,b::AbstractVector,work::AbstractVector
     end
 end
 
-function A_mul_B!(A::QuasiUpperTriangular, B::AbstractVector)
+function mul!(A::QuasiUpperTriangular, B::AbstractVector)
     m = length(B)
     if m != size(A, 1)
         throw(DimensionMismatch("right hand side B needs first dimension of size $(size(A,1)), has size $m"))
@@ -93,7 +93,8 @@ function A_mul_B!(A::QuasiUpperTriangular, B::AbstractVector)
     B[m] = Bi2
 end
 
-function At_mul_B!(A::QuasiUpperTriangular, B::AbstractVector)
+function mul!(transA::Transpose{<:Any,<:QuasiUpperTriangular}, B::AbstractVector)
+    A = transA.parent
     m, n = size(B, 1), size(B, 2)
     if m != size(A, 1)
         throw(DimensionMismatch("right hand side B needs first dimension of size $(size(A,1)), has size $m"))
@@ -116,7 +117,7 @@ function At_mul_B!(A::QuasiUpperTriangular, B::AbstractVector)
     B
 end
 
-function A_mul_B!(A::AbstractVector, B::QuasiUpperTriangular)
+function mul!(A::AbstractVector, B::QuasiUpperTriangular)
     m, n = size(A)
     if size(B, 1) != n
         throw(DimensionMismatch("right hand side B needs first dimension of size $n, has size $(size(B,1))"))
@@ -139,7 +140,8 @@ function A_mul_B!(A::AbstractVector, B::QuasiUpperTriangular)
     A
 end
 
-function A_mul_Bt!(A::AbstractVector, B::QuasiUpperTriangular)
+function mul!(A::AbstractVector, transB::Transpose{<:Any,<:QuasiUpperTriangular})
+    B = transB.parent
     m, n = size(A)
     if size(B, 1) != n
         throw(DimensionMismatch("right hand side B needs first dimension of size $n, has size $(size(B,1))"))
@@ -162,17 +164,17 @@ function A_mul_Bt!(A::AbstractVector, B::QuasiUpperTriangular)
     A
 end
 
-function A_mul_B!(c::AbstractMatrix, a::QuasiUpperTriangular, b::AbstractMatrix)
-    A_mul_B!(c,1.0,a,b)
+function mul!(c::AbstractMatrix, a::QuasiUpperTriangular, b::AbstractMatrix)
+    mul!(c,1.0,a,b)
     c
 end
 
-function A_mul_B!(c::AbstractVecOrMat, a::QuasiUpperTriangular, b::AbstractVecOrMat, nr::Int64, nc::Int64)
-    A_mul_B!(c,1.0,a,b,nr,nc)
+function mul!(c::AbstractVecOrMat, a::QuasiUpperTriangular, b::AbstractVecOrMat, nr::Int64, nc::Int64)
+    mul!(c,1.0,a,b,nr,nc)
     c
 end
 
-function A_mul_B!(c::AbstractMatrix, alpha::Float64, a::QuasiUpperTriangular, b::AbstractMatrix)
+function mul!(c::AbstractMatrix, alpha::Float64, a::QuasiUpperTriangular, b::AbstractMatrix)
     m, n = size(b)
     if size(a, 1) != m
         throw(DimensionMismatch("right hand side B needs first dimension of size $n, has size $(size(b,1))"))
@@ -189,7 +191,7 @@ function A_mul_B!(c::AbstractMatrix, alpha::Float64, a::QuasiUpperTriangular, b:
     c
 end
 
-function A_mul_B!(c::AbstractVecOrMat, alpha::Float64, a::QuasiUpperTriangular, b::AbstractVecOrMat, nr::Int64, nc::Int64)
+function mul!(c::AbstractVecOrMat, alpha::Float64, a::QuasiUpperTriangular, b::AbstractVecOrMat, nr::Int64, nc::Int64)
     m, n = size(a)
     copyto!(c,b)
     ccall((@blasfunc(dtrmm_), libblas), Nothing,
@@ -209,7 +211,7 @@ function A_mul_B!(c::AbstractVecOrMat, alpha::Float64, a::QuasiUpperTriangular, 
     c
 end
 
-function A_mul_B!(A::QuasiUpperTriangular, B::AbstractMatrix)
+function mul!(A::QuasiUpperTriangular, B::AbstractMatrix)
     m, n = size(B, 1), size(B, 2)
     if m != size(A, 1)
         throw(DimensionMismatch("right hand side B needs first dimension of size $(size(A,1)), has size $m"))
@@ -232,12 +234,14 @@ function A_mul_B!(A::QuasiUpperTriangular, B::AbstractMatrix)
     B
 end
 
-function At_mul_B!(c::AbstractMatrix, a::QuasiUpperTriangular, b::AbstractMatrix)
-    At_mul_B!(c,1.0,a,b)
+function mul!(c::AbstractMatrix, transa::Transpose{<:Any,<:QuasiUpperTriangular}, b::AbstractMatrix)
+    a = transa.parent
+    mul!(c,1.0,transpose(a),b)
     c
 end
 
-function At_mul_B!(c::AbstractMatrix, alpha::Float64, a::QuasiUpperTriangular, b::AbstractMatrix)
+function mul!(c::AbstractMatrix, alpha::Float64, transa::Transpose{<:Any,<:QuasiUpperTriangular}, b::AbstractMatrix)
+    a = transa.parent
     m, n = size(b)
     if size(a, 1) != m
         throw(DimensionMismatch("right hand side B needs first dimension of size $n, has size $(size(b,1))"))
@@ -254,7 +258,8 @@ function At_mul_B!(c::AbstractMatrix, alpha::Float64, a::QuasiUpperTriangular, b
     c
 end
 
-function At_mul_B!(A::QuasiUpperTriangular, B::AbstractMatrix)
+function mul!(transA::Transpose{<:Any,<:QuasiUpperTriangular}, B::AbstractMatrix)
+    A = transA.parent
     m, n = size(B, 1), size(B, 2)
     if m != size(A, 1)
         throw(DimensionMismatch("right hand side B needs first dimension of size $(size(A,1)), has size $m"))
@@ -277,17 +282,17 @@ function At_mul_B!(A::QuasiUpperTriangular, B::AbstractMatrix)
     B
 end
 
-function A_mul_B!(c::AbstractMatrix, a::AbstractMatrix, b::QuasiUpperTriangular)
-    A_mul_B!(c,1.0,a,b)
+function mul!(c::AbstractMatrix, a::AbstractMatrix, b::QuasiUpperTriangular)
+    mul!(c,1.0,a,b)
     c
 end
 
-function A_mul_B!(c::AbstractVecOrMat, a::AbstractVecOrMat, b::QuasiUpperTriangular, nr::Int64, nc::Int64)
-    A_mul_B!(c,1.0,a,b,nr,nc)
+function mul!(c::AbstractVecOrMat, a::AbstractVecOrMat, b::QuasiUpperTriangular, nr::Int64, nc::Int64)
+    mul!(c,1.0,a,b,nr,nc)
     c
 end
 
-function A_mul_B!(c::AbstractMatrix, alpha::Float64, a::AbstractMatrix, b::QuasiUpperTriangular)
+function mul!(c::AbstractMatrix, alpha::Float64, a::AbstractMatrix, b::QuasiUpperTriangular)
     m, n = size(a)
     if size(b, 1) != n
         throw(DimensionMismatch("right hand side B needs first dimension of size $n, has size $(size(B,1))"))
@@ -304,7 +309,7 @@ function A_mul_B!(c::AbstractMatrix, alpha::Float64, a::AbstractMatrix, b::Quasi
     c
 end
 
-function A_mul_B!(c::AbstractVecOrMat, alpha::Float64, a::AbstractVecOrMat, b::QuasiUpperTriangular, nr::Int64, nc::Int64)
+function mul!(c::AbstractVecOrMat, alpha::Float64, a::AbstractVecOrMat, b::QuasiUpperTriangular, nr::Int64, nc::Int64)
     m, n = size(b)
     copyto!(c,a)
     ccall((@blasfunc(dtrmm_), libblas), Nothing,
@@ -324,7 +329,7 @@ function A_mul_B!(c::AbstractVecOrMat, alpha::Float64, a::AbstractVecOrMat, b::Q
     c
 end
 
-function A_mul_B!(A::AbstractMatrix, B::QuasiUpperTriangular)
+function mul!(A::AbstractMatrix, B::QuasiUpperTriangular)
     m, n = size(A)
     if size(B, 1) != n
         throw(DimensionMismatch("right hand side B needs first dimension of size $n, has size $(size(B,1))"))
@@ -347,12 +352,14 @@ function A_mul_B!(A::AbstractMatrix, B::QuasiUpperTriangular)
     A
 end
 
-function A_mul_Bt!(c::AbstractMatrix, a::AbstractMatrix, b::QuasiUpperTriangular)
-    A_mul_Bt!(c,1.0,a,b)
+function mul!(c::AbstractMatrix, a::AbstractMatrix, transb::Transpose{<:Any,<:QuasiUpperTriangular})
+    b = transb.parent
+    mul!(c,1.0,a,transpose(b))
     c
 end
 
-function A_mul_Bt!(c::AbstractMatrix, alpha::Float64, a::AbstractMatrix, b::QuasiUpperTriangular)
+function mul!(c::AbstractMatrix, alpha::Float64, a::AbstractMatrix, transb::Transpose{<:Any,<:QuasiUpperTriangular})
+    b = transb.parent
     m, n = size(a)
     if size(b, 1) != n
         throw(DimensionMismatch("right hand side B needs first dimension of size $n, has size $(size(B,1))"))
@@ -368,7 +375,8 @@ function A_mul_Bt!(c::AbstractMatrix, alpha::Float64, a::AbstractMatrix, b::Quas
     c
 end
 
-function A_mul_Bt!(A::AbstractMatrix, B::QuasiUpperTriangular)
+function mul!(A::AbstractMatrix, transB::Transpose{<:Any,<:QuasiUpperTriangular})
+    B = transB.parent
     m, n = size(A)
     if size(B, 1) != n
         throw(DimensionMismatch("right hand side B needs first dimension of size $n, has size $(size(B,1))"))
@@ -391,14 +399,14 @@ function A_mul_Bt!(A::AbstractMatrix, B::QuasiUpperTriangular)
     A
 end
 
-A_mul_B!(c::QuasiUpperTriangular,a::QuasiUpperTriangular,b::QuasiUpperTriangular) = A_mul_B!(c.data,a,b.data)
-At_mul_B!(c::QuasiUpperTriangular,a::QuasiUpperTriangular,b::QuasiUpperTriangular) = At_mul_B!(c.data,a,b.data)
-A_mul_Bt!(c::QuasiUpperTriangular,a::QuasiUpperTriangular,b::QuasiUpperTriangular) = A_mul_Bt!(c.data,a,b.data)
-A_mul_B!(c::AbstractMatrix,a::QuasiUpperTriangular,b::QuasiUpperTriangular) = A_mul_B!(c,a,b.data)
-At_mul_B!(c::AbstractMatrix,a::QuasiUpperTriangular,b::QuasiUpperTriangular) = At_mul_B!(c,a,b.data)
-A_mul_Bt!(c::AbstractMatrix,a::QuasiUpperTriangular,b::QuasiUpperTriangular) = A_mul_Bt!(c,a,b.data)
+mul!(c::QuasiUpperTriangular,a::QuasiUpperTriangular,b::QuasiUpperTriangular) = mul!(c.data,a,b.data)
+mul!(transc::Transpose{<:Any,<:QuasiUpperTriangular},a::QuasiUpperTriangular,b::QuasiUpperTriangular) = (c=transc.parent; mul!(transpose(c.data),a,b.data))
+mul!(c::QuasiUpperTriangular,a::QuasiUpperTriangular,b::Transpose{<:Any,<:QuasiUpperTriangular}) = (b = tranb.parent; mul!(c.data,a,transpose(b.data)))
+mul!(c::AbstractMatrix,a::QuasiUpperTriangular,b::QuasiUpperTriangular) = mul!(c,a,b.data)
+mul!(c::AbstractMatrix,transa::Transpose{<:Any,<:QuasiUpperTriangular},b::QuasiUpperTriangular) = (a = transa.parent; mul!(c,transpose(a),b.data))
+mul!(c::AbstractMatrix,a::QuasiUpperTriangular,transb::Transpose{<:Any,<:QuasiUpperTriangular}) = (b = transb.parent; mul!(c,a,transpose(b.data)))
 
-function A_mul_B!(c::VecOrMat{Float64}, offset_c::Int64, a::VecOrMat{Float64}, offset_a::Int64,
+function mul!(c::VecOrMat{Float64}, offset_c::Int64, a::VecOrMat{Float64}, offset_a::Int64,
                   ma::Int64, na::Int64, b::QuasiUpperTriangular, offset_b::Int64, nb::Int64)
     m, n = size(b)
     copyto!(c, offset_c, a, offset_a, ma*na)
@@ -421,7 +429,7 @@ function A_mul_B!(c::VecOrMat{Float64}, offset_c::Int64, a::VecOrMat{Float64}, o
     end
 end
 
-function A_mul_B!(c::VecOrMat{Float64}, offset_c::Int64, a::QuasiUpperTriangular, offset_a::Int64,
+function mul!(c::VecOrMat{Float64}, offset_c::Int64, a::QuasiUpperTriangular, offset_a::Int64,
                   ma::Int64, na::Int64, b::VecOrMat{Float64}, offset_b::Int64, nb::Int64)
     copyto!(c, offset_c, b, offset_b, na*nb)
     alpha = 1.0
@@ -431,10 +439,10 @@ function A_mul_B!(c::VecOrMat{Float64}, offset_c::Int64, a::QuasiUpperTriangular
           Ref{UInt8}('L'), Ref{UInt8}('U'), Ref{UInt8}('N'), Ref{UInt8}('N'), Ref{BlasInt}(ma), Ref{BlasInt}(nb),
           Ref{Float64}(alpha), a.data, Ref{BlasInt}(ma), Ref(c, offset_c), Ref{BlasInt}(na))
 
-    @inbounds for i = 2:ma
-        x = a[i,i-1]
-        indb = offset_b 
-        indc = offset_c + 1
+    @inbounds for i = 1:ma-1
+        x = a[i+1,i]
+        indb = offset_b + i - 1 
+        indc = offset_c + i
         @simd for j = 1:nb
             c[indc] += x*b[indb]
             indb += ma
@@ -443,7 +451,7 @@ function A_mul_B!(c::VecOrMat{Float64}, offset_c::Int64, a::QuasiUpperTriangular
     end
 end
 
-function A_mul_B!(c::Array{Float64,1}, offset_c::Int64,
+function mul!(c::Array{Float64,1}, offset_c::Int64,
                   a::QuasiUpperTriangular, offset_a::Int64, ma::Int64, na::Int64,
                   b::SubArray{Float64,1,Array{Float64,1},Tuple{UnitRange{Int64}},true}, offset_b::Int64, nb::Int64)
     copyto!(c, offset_c, b, offset_b, na*nb)
@@ -469,7 +477,7 @@ function A_mul_B!(c::Array{Float64,1}, offset_c::Int64,
     c
 end
 
-function A_mul_B!(c::SubArray{Float64,1,Array{Float64,1},Tuple{UnitRange{Int64}},true}, offset_c::Int64,
+function mul!(c::SubArray{Float64,1,Array{Float64,1},Tuple{UnitRange{Int64}},true}, offset_c::Int64,
                   a::QuasiUpperTriangular, offset_a::Int64, ma::Int64, na::Int64,
                   b::SubArray{Float64,1,Array{Float64,1},Tuple{UnitRange{Int64}},true}, offset_b::Int64, nb::Int64)
     copyto!(c, offset_c, b, offset_b, na*nb)
@@ -498,8 +506,9 @@ function A_mul_B!(c::SubArray{Float64,1,Array{Float64,1},Tuple{UnitRange{Int64}}
 end
 
 
-function At_mul_B!(c::VecOrMat{Float64}, offset_c::Int64, a::QuasiUpperTriangular, offset_a::Int64,
-                  ma::Int64, na::Int64, b::VecOrMat{Float64}, offset_b::Int64, nb::Int64)
+function mul!(c::VecOrMat{Float64}, offset_c::Int64, transa::Transpose{<:Any,<:QuasiUpperTriangular}, offset_a::Int64,
+              ma::Int64, na::Int64, b::VecOrMat{Float64}, offset_b::Int64, nb::Int64)
+    a = transa.parent
     copyto!(c, offset_c, b, offset_b, ma*nb)
     alpha = 1.0
     ccall((@blasfunc(dtrmm_), libblas), Nothing,
@@ -520,7 +529,8 @@ function At_mul_B!(c::VecOrMat{Float64}, offset_c::Int64, a::QuasiUpperTriangula
     end
 end
 
-function A_mul_Bt!(c::AbstractVector, offset_c::Int64, a::AbstractVector, offset_a::Int64, ma::Int64, na::Int64, b::QuasiUpperTriangular, offset_b::Int64, nb::Int64)
+function mul!(c::AbstractVector, offset_c::Int64, a::AbstractVector, offset_a::Int64, ma::Int64, na::Int64, transb::Transpose{<:Any,<:QuasiUpperTriangular}, offset_b::Int64, nb::Int64)
+    b = transb.parent
     copyto!(c, offset_c, a, offset_a, ma*na)
     alpha = 1.0
     ccall((@blasfunc(dtrmm_), libblas), Nothing,
@@ -544,7 +554,7 @@ end
 
 
 # solver by substitution
-function A_ldiv_B!(a::QuasiUpperTriangular, b::AbstractMatrix)
+function ldiv!(a::QuasiUpperTriangular, b::AbstractMatrix)
     m, n = size(a)
     nb, p = size(b)
     if nb != n
@@ -581,7 +591,7 @@ function A_ldiv_B!(a::QuasiUpperTriangular, b::AbstractMatrix)
 end
 
     
-function A_rdiv_B!(a::AbstractMatrix, b::QuasiUpperTriangular)
+function rdiv!(a::AbstractMatrix, b::QuasiUpperTriangular)
     m, n = size(a)
     nb, p = size(b)
     if nb != n
@@ -618,7 +628,8 @@ function A_rdiv_B!(a::AbstractMatrix, b::QuasiUpperTriangular)
     end
 end
 
-function A_rdiv_Bt!(a::AbstractMatrix, b::QuasiUpperTriangular)
+function rdiv!(a::AbstractMatrix, transb::Transpose{<:Any,<:QuasiUpperTriangular})
+    b = transb.parent
     m, n = size(a)
     nb, p = size(b)
     if nb != n
