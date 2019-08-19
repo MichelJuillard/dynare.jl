@@ -81,7 +81,7 @@ function mul!(c::StridedVecOrMat, offset_c::Int64, at::Transpose{<:Any,<:Strided
 end
 
 function mul!(c::StridedVecOrMat{Float64}, offset_c::Int64,
-              a::StridedVecOrMat{Float64},offset_a::Int64, ma::Int64, na::Int64,
+              a::StridedVecOrMat{Float64}, offset_a::Int64, ma::Int64, na::Int64,
               b::StridedVecOrMat{Float64}, offset_b::Int64, nb::Int64)
     ref_a = Ref(a, offset_a)
     ref_b = Ref(b, offset_b)
