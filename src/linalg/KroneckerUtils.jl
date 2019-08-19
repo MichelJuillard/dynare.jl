@@ -57,13 +57,92 @@ function a_mul_kron_b!(c::AbstractArray, a::AbstractArray, b::AbstractArray, ord
     avec = vec(a)
     cvec = vec(c)
     for q=0:order-1
-#        vavec = view(avec,1:ma*mb^(order-q)*nb^q)
-#        vcvec = view(cvec,1:ma*mb^(order-q-1)*nb^(q+1))
         kron_mul_elem_t!(cvec,b,avec,mb^(order-q-1),nb^q*ma)
         if q < order - 1
             copyto!(avec,cvec)
         end
     end
+end
+
+function a_mul_kron_b!(c::AbstractArray, a::AbstractArray, b::AbstractVector,work::AbstractVector)
+    ma, na = size(a)
+    order = length(b)
+    mc, nc = size(c)
+    mborder = 1
+    nborder = 1
+    for i = 1:order
+        mb, nb = size(b[i])
+        mborder *= mb
+        nborder *= nb
+    end
+    na == mborder || throw(DimensionMismatch("The number of columns of a, $na, doesn't match the number of rows of matrices in b, $mborder"))
+    mc == ma || throw(DimensionMismatch("The number of rows of c, $mc, doesn't match the number of rows of a, $ma"))
+    nc == nborder || throw(DimensionMismatch("The number of columns of c, $nc, doesn't match the number of columns of matrices in b, $nborder"))
+    mborder <= nborder || throw(DimensionMismatch("the product of the number of rows of the b matrices needs to be smaller or equal to the product of the number of columns. Otherwise, you need to call a_mul_kron_b!(c::AbstractArray, a::AbstractArray, b::Vector{AbstractArray},work1::AbstractVector,work2::AbstractVector)"))
+
+    copyto!(work,a)
+    mb, nb = size(b[1])
+    vwork = view(work,1:ma*na)
+    cvec = vec(c)
+    mc = ma*na
+    p = Int(mborder/size(b[order],1))
+    q = ma
+    for i = order:-1:1
+        mb, nb = size(b[i])
+        mc = Int(mc*nb/mb)
+        vcvec = view(cvec,1:mc)
+        kron_mul_elem_t!(cvec,b[i],work,p,q)
+        if i > 1
+            p = Int(p/mb)
+            q = q*nb
+            vwork = view(work,1:mc)
+            copyto!(vwork,vcvec)
+        end
+    end
+end
+
+"""
+```
+vec(ABC) = (C^T o A)vec(B)
+vec(BC) = vec(IBC) = (C^T o I)vec(B)
+```
+"""
+function a_mul_kron_b!(c::AbstractArray, a::AbstractArray, b::AbstractVector,work1::AbstractVector,work2::AbstractVector)
+    ma, na = size(a)
+    order = length(b)
+    mc, nc = size(c)
+    mborder = 1
+    nborder = 1
+    for i = 1:order
+        mb, nb = size(b[i])
+        mborder *= mb
+        nborder *= nb
+    end
+    na == mborder || throw(DimensionMismatch("The number of columns of a, $na, doesn't match the number of rows of matrices in b, $mborder"))
+    mc == ma || throw(DimensionMismatch("The number of rows of c, $mc, doesn't match the number of rows of a, $ma"))
+    nc == nborder || throw(DimensionMismatch("The number of columns of c, $nc, doesn't match the number of columns of matrices in b, $nborder"))
+
+    copyto!(work1,a)
+    mb, nb = size(b[order])
+    n1 = ma*na
+    n2 = Int(n1*nb/mb)
+    v1 = view(work1, 1:n1)
+    v2 = view(work2, 1:n2)
+    p = Int(mborder/size(b[order],1))
+    q = ma
+    for i = order:-1:1
+        kron_mul_elem_t!(v2,b[i],v1,p,q)
+        if i > 1
+            mb, nb = size(b[i-1])
+            p = Int(p/mb)
+            q = q*nb
+            n2 = Int(n1*nb/mb)
+            v1parent = v1.parent
+            v1 = v2
+            v2 = view(v1parent,1:n2)
+        end
+    end
+    copyto!(c,v2)
 end
 
 """
@@ -174,6 +253,9 @@ function kron_at_mul_b!(c::AbstractVector, a::AbstractArray, order::Int64, b::Ab
     copyto!(c,1,work2,1,s)
 end
 
+"""
+(a o ... o a)b = (a o I)(I o a o I)....(I o a o I)(I o a)b
+"""
 function kron_a_mul_b!(c::AbstractVector, a::AbstractArray, order::Int64, b::AbstractVector, q::Int64, work1::AbstractVector, work2::AbstractVector)
     ma,na = size(a)
 #    length(work) == naorder*mb  || throw(DimensionMismatch("The dimension of vector , $(length(c)) doesn't correspond to order, ($order)  and the dimension of the matrices a, $(size(a)), and b, $(size(b))"))
@@ -204,7 +286,7 @@ function at_mul_b_kron_c!(d::AbstractArray, a::AbstractArray, b::AbstractArray, 
         mul!(vec(d), 1, transpose(a), 1, na, ma, work1, 1, nc^order)
     end
 end
-
+using Test
 function a_mul_b_kron_ct!(d::AbstractArray, a::AbstractArray, b::AbstractArray, c::AbstractArray, order::Int64, work1::AbstractVector, work2::AbstractVector)
     ma, na = size(a)
     mb, nb = size(b)
@@ -215,43 +297,6 @@ function a_mul_b_kron_ct!(d::AbstractArray, a::AbstractArray, b::AbstractArray, 
     else
         kron_a_mul_b!(work1, b, order, c, mb, work1, work2)
         mul!(vec(d), 1, transpose(a), 1, ma, na, work1, 1, nc^order)
-    end
-end
-
-function a_mul_kron_b!(c::AbstractArray, a::AbstractArray, b::AbstractVector,work::AbstractVector)
-    ma, na = size(a)
-    order = length(b)
-    mc, nc = size(c)
-    mborder = 1
-    nborder = 1
-    for i = 1:order
-        mb, nb = size(b[i])
-        mborder *= mb
-        nborder *= nb
-    end
-    na == mborder || throw(DimensionMismatch("The number of columns of a, $na, doesn't match the number of rows of matrices in b, $mborder"))
-    mc == ma || throw(DimensionMismatch("The number of rows of c, $mc, doesn't match the number of rows of a, $ma"))
-    nc == nborder || throw(DimensionMismatch("The number of columns of c, $nc, doesn't match the number of columns of matrices in b, $nborder"))
-    mborder <= nborder || throw(DimensionMismatch("the product of the number of rows of the b matrices needs to be smaller or equal to the product of the number of columns. Otherwise, you need to call a_mul_kron_b!(c::AbstractArray, a::AbstractArray, b::Vector{AbstractArray},work::AbstractVector)"))
-
-    copyto!(work,a)
-    mb, nb = size(b[1])
-    vwork = view(work,1:ma*na)
-    cvec = vec(c)
-    mc = ma*na
-    p = Int(mborder/size(b[order],1))
-    q = ma
-    for i = order:-1:1
-        mb, nb = size(b[i])
-        mc = Int(mc*nb/mb)
-        vcvec = view(cvec,1:mc)
-        kron_mul_elem_t!(cvec,b[i],work,p,q)
-        if i > 1
-            p = Int(p/mb)
-            q = q*nb
-            vwork = view(work,1:mc)
-            copyto!(vwork,vcvec)
-        end
     end
 end
 
@@ -294,10 +339,10 @@ end
 #
 #Performs (I_p \otimes a \otimes I_q) b, where m,n = size(a). The result is stored in c.
 #"""
-function kron_mul_elem!(c::AbstractVector, offset_c::Int64, a::AbstractArray, b::AbstractVector, offset_b::Int64, p::Int64, q::Int64)
+function kron_mul_elem!(c::AbstractArray, offset_c::Int64, a::AbstractArray, b::AbstractArray, offset_b::Int64, p::Int64, q::Int64)
     m, n = size(a)
-    length(b) >= n*p*q || throw(DimensionMismatch("The dimension of vector b, $(length(b)) doesn't correspond to order, ($p, $q)  and the dimensions of the matrix, $(size(a))"))
-    length(c) >= m*p*q || throw(DimensionMismatch("The dimension of the vector c, $(length(c)) doesn't correspond to order, ($p, $q)  and the dimensions of the matrix, $(size(a))"))
+    size(b,1) >= n*p*q || throw(DimensionMismatch("The dimension of vector b, $(length(b)) doesn't correspond to order, ($p, $q)  and the dimensions of the matrix, $(size(a))"))
+    size(c,1) >= m*p*q || throw(DimensionMismatch("The dimension of the vector c, $(length(c)) doesn't correspond to order, ($p, $q)  and the dimensions of the matrix, $(size(a))"))
 
     begin
         if p == 1 && q == 1
@@ -328,10 +373,10 @@ end
 #
 #Performs (I_p \otimes a' \otimes I_q) b, where m,n = size(a). The result is stored in c.
 #"""
-function kron_mul_elem_t!(c::AbstractVector, offset_c::Int64, a::AbstractArray, b::AbstractVector, offset_b::Int64, p::Int64, q::Int64)
+function kron_mul_elem_t!(c::AbstractArray, offset_c::Int64, a::AbstractArray, b::AbstractArray, offset_b::Int64, p::Int64, q::Int64)
     m, n = size(a)
-    length(b) >= m*p*q || throw(DimensionMismatch("The dimension of vector b, $(length(b)) doesn't correspond to order, ($p, $q)  and the dimensions of the matrix, $(size(a))"))
-    length(c) >= n*p*q || throw(DimensionMismatch("The dimension of the vector c, $(length(c)) doesn't correspond to order, ($p, $q)  and the dimensions of the matrix, $(size(a))"))
+    size(b,1) >= m*p*q || throw(DimensionMismatch("The dimension of vector b, $(length(b)) doesn't correspond to order, ($p, $q)  and the dimensions of the matrix, $(size(a))"))
+    size(c,1) >= n*p*q || throw(DimensionMismatch("The dimension of the vector c, $(length(c)) doesn't correspond to order, ($p, $q)  and the dimensions of the matrix, $(size(a))"))
 
     begin
         if p == 1 && q == 1
@@ -343,6 +388,15 @@ function kron_mul_elem_t!(c::AbstractVector, offset_c::Int64, a::AbstractArray, 
         elseif p == 1
             # (a' ⊗ I_q)*b = (b'*(a ⊗ I_q))' = vec(reshape(b,q,m)*a)
             mul!(c, offset_c, b, offset_b, q, m, a, 1, n)
+#=
+            println(typeof(a))
+            println(typeof(b))
+            println(typeof(c))
+            println(which(mul!,(typeof(c), typeof(offset_c), typeof(b), typeof(offset_b), typeof(q), typeof(m), typeof(a), typeof(1), typeof(n))))
+            =#
+            vc = view(c,offset_c-1 .+ (1:q*n))
+            vb = view(b, offset_b - 1 .+ (1:q*m))
+            @test vc ≈ vec(reshape(vb,q,m)*a)
         else
             # (I_p ⊗ a' ⊗ I_q)*b = vec([(a' ⊗ I_q)*b_1 (a' ⊗ I_q)*b_2 ... (a' ⊗ I_q)*b_p])
             mq = m*q
@@ -356,7 +410,7 @@ function kron_mul_elem_t!(c::AbstractVector, offset_c::Int64, a::AbstractArray, 
     end
 end
 
-function kron_mul_elem!(c::AbstractVector, a::AbstractArray, b::AbstractVector, p::Int64, q::Int64)
+function kron_mul_elem!(c::AbstractArray, a::AbstractArray, b::AbstractArray, p::Int64, q::Int64)
     kron_mul_elem!(c, 1, a, b, 1, p, q)
 end
 
@@ -364,9 +418,9 @@ end
 #    kron_mul_elem_t!(c, , a, b, 1, p, q)
 #end
 
-function kron_mul_elem_t!(c::SubArray{Float64,1,Array{Float64,1},Tuple{UnitRange{Int64}},true}, a::AbstractArray, b::SubArray{Float64,1,Array{Float64,1},Tuple{UnitRange{Int64}},true}, p::Int64, q::Int64)
-    kron_mul_elem_t!(c.parent, c.offset1 + 1, a, b.parent, b.offset1 + 1, p, q)
-end
+#function kron_mul_elem_t!(c::SubArray{Float64,1,Array{Float64,1},Tuple{UnitRange{Int64}},true}, a::AbstractArray, b::SubArray{Float64,1,Array{Float64,1},Tuple{UnitRange{Int64}},true}, p::Int64, q::Int64)
+#    kron_mul_elem_t!(c.parent, c.offset1 + 1, a, b.parent, b.offset1 + 1, p, q)
+#end
 
 function kron_mul_elem_t!(c::AbstractVector, a::AbstractArray, b::AbstractVector, p::Int64, q::Int64)
     kron_mul_elem_t!(c, 1, a, b, 1, p, q)
