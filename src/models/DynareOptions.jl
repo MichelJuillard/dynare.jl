@@ -2,7 +2,7 @@ module DynareOptions
 
 export dynare_options
 
-type dynare_options
+mutable struct dynare_options
     dynare_version::String
     function dynare_options()
         dynare_version = ""

@@ -1,4 +1,5 @@
 module model
+using LinearAlgebra
 export Model, get_de, get_abc, inverse_order_of_dynare_decision_rule
 
 struct Model
@@ -59,56 +60,56 @@ struct Model
 end
 
 function Model(endo_nbr, lead_lag_incidence, current_exogenous_nbr, lagged_exogenous_nbr)
-    i_static = find((lead_lag_incidence[1,:] .== 0) .& (lead_lag_incidence[3,:] .== 0))
+    i_static = findall((lead_lag_incidence[1,:] .== 0) .& (lead_lag_incidence[3,:] .== 0))
     p_static = lead_lag_incidence[2,i_static]
-    i_dyn = find((lead_lag_incidence[1,:] .> 0) .| (lead_lag_incidence[3,:] .> 0))
+    i_dyn = findall((lead_lag_incidence[1,:] .> 0) .| (lead_lag_incidence[3,:] .> 0))
     n_static = length(i_static)
-    i_bkwrd = find((lead_lag_incidence[1,:] .> 0) .& (lead_lag_incidence[3,:] .== 0))
-    i_bkwrd_b = find((lead_lag_incidence[1,:] .> 0))
-    i_bkwrd_ns = find(lead_lag_incidence[1,i_dyn] .> 0)
+    i_bkwrd = findall((lead_lag_incidence[1,:] .> 0) .& (lead_lag_incidence[3,:] .== 0))
+    i_bkwrd_b = findall((lead_lag_incidence[1,:] .> 0))
+    i_bkwrd_ns = findall(lead_lag_incidence[1,i_dyn] .> 0)
     p_bkwrd = lead_lag_incidence[1,i_bkwrd]
     p_bkwrd_b = lead_lag_incidence[1,i_bkwrd_b]
     n_bkwrd = length(i_bkwrd)
-    i_fwrd = find((lead_lag_incidence[3,:] .> 0) .& (lead_lag_incidence[1,:] .== 0)) 
-    i_fwrd_b = find((lead_lag_incidence[3,:] .> 0)) 
-    i_fwrd_ns = find(lead_lag_incidence[3,i_dyn] .> 0)
+    i_fwrd = findall((lead_lag_incidence[3,:] .> 0) .& (lead_lag_incidence[1,:] .== 0)) 
+    i_fwrd_b = findall((lead_lag_incidence[3,:] .> 0)) 
+    i_fwrd_ns = findall(lead_lag_incidence[3,i_dyn] .> 0)
     p_fwrd = lead_lag_incidence[3,i_fwrd]
     p_fwrd_b = lead_lag_incidence[3,i_dyn[i_fwrd_ns]]
     n_fwrd = length(i_fwrd)
-    i_both = find((lead_lag_incidence[1,:] .> 0) .& (lead_lag_incidence[3,:] .> 0)) 
+    i_both = findall((lead_lag_incidence[1,:] .> 0) .& (lead_lag_incidence[3,:] .> 0)) 
     p_both_b = lead_lag_incidence[1,i_both]
     p_both_f = lead_lag_incidence[3,i_both]
     n_both = length(i_both)
     n_states = n_bkwrd + n_both
-    i_current = find(lead_lag_incidence[2,:] .> 0 )
+    i_current = findall(lead_lag_incidence[2,:] .> 0 )
     p_current = lead_lag_incidence[2,i_current]
     n_current = count(i->(i > 0),lead_lag_incidence[2,:])
-    i_current_ns = find(lead_lag_incidence[2,i_dyn] .> 0 )
+    i_current_ns = findall(lead_lag_incidence[2,i_dyn] .> 0 )
     p_current_ns = lead_lag_incidence[2,i_dyn[i_current_ns]]
     n_current_ns = count(i->(i > 0),lead_lag_incidence[2,i_dyn])
-    i_cur_fwrd = find(lead_lag_incidence[2,i_fwrd])
+    i_cur_fwrd = findall(lead_lag_incidence[2,i_fwrd] .> 0)
     n_cur_fwrd = length(i_cur_fwrd)
     p_cur_fwrd = lead_lag_incidence[2,i_fwrd[i_cur_fwrd]]
-    i_cur_bkwrd = find(lead_lag_incidence[2,i_bkwrd])
+    i_cur_bkwrd = findall(lead_lag_incidence[2,i_bkwrd] .> 0)
     n_cur_bkwrd = length(i_cur_bkwrd)
     p_cur_bkwrd = lead_lag_incidence[2,i_bkwrd[i_cur_bkwrd]]
-    i_cur_both = find(lead_lag_incidence[2,i_both])
+    i_cur_both = findall(lead_lag_incidence[2,i_both] .> 0)
     n_cur_both = length(i_cur_both)
     p_cur_both = lead_lag_incidence[2,i_both[i_cur_both]]
-    icolsD = [1:n_cur_bkwrd; n_bkwrd+n_both+(1:(n_fwrd+n_both))]
+    icolsD = [1:n_cur_bkwrd; n_bkwrd+n_both .+ (1:(n_fwrd+n_both))]
     jcolsD = [p_cur_bkwrd; p_fwrd; p_both_f]
     # derivatives of current values of variables that are both
     # forward and backward are included in the E matrix
-    icolsE = [1:(n_bkwrd+n_both); n_bkwrd+n_both+(1:(n_fwrd+n_both))]
+    icolsE = [1:(n_bkwrd + n_both); n_bkwrd + n_both .+ (1:(n_fwrd+n_both))]
     jcolsE = [p_bkwrd; p_both_b; p_cur_fwrd; p_cur_both]
-    colsUD = n_bkwrd+(1:n_both)
-    colsUE = n_both + n_fwrd + colsUD
+    colsUD = n_bkwrd .+ (1:n_both)
+    colsUE = n_both + n_fwrd .+ colsUD
     n_dyn = endo_nbr - n_static + n_both
     DErows1 = 1:(n_dyn-n_both)
-    DErows2 = (n_dyn-n_both)+(1:n_both)
-    gx_rows = n_bkwrd + (1:(n_fwrd+n_both))
+    DErows2 = (n_dyn-n_both) .+ (1:n_both)
+    gx_rows = n_bkwrd .+ (1:(n_fwrd+n_both))
     hx_rows = 1:(n_bkwrd + n_both)
-    i_current_exogenous = maximum(lead_lag_incidence) + (1:current_exogenous_nbr)
+    i_current_exogenous = maximum(lead_lag_incidence) .+ (1:current_exogenous_nbr)
     i_lagged_exogenous = 0:-1
     serially_correlated_exogenous = false
     Model(endo_nbr, current_exogenous_nbr, lagged_exogenous_nbr,
@@ -125,6 +126,8 @@ function Model(endo_nbr, lead_lag_incidence, current_exogenous_nbr, lagged_exoge
           serially_correlated_exogenous)   
 end
 
+Model(endo_nbr, lli, current_exogenous_nbr) = Model(endo_nbr, lli, current_exogenous_nbr, 0)
+    
 function get_de(jacobian,model)
     n1 = size(model.DErows1,1)
     n2 = model.n_dyn - n1;
@@ -132,7 +135,7 @@ function get_de(jacobian,model)
     e = zeros(model.n_dyn,model.n_dyn)
     d[1:n1,model.icolsD] = jacobian[:,model.jcolsD]
     e[1:n1,model.icolsE] = -jacobian[:,model.jcolsE]
-    u = eye(n2)                                    
+    u = Matrix{Float64}(I, n2, n2)                                    
     d[model.DErows2,model.colsUD] = u
     e[model.DErows2,model.colsUE] = u
     return d, e
@@ -151,7 +154,7 @@ function get_abc(model::Model,jacobian::Array{Float64})
 end
 
 function inverse_order_of_dynare_decision_rule(m::Model)
-    inverse_order_var = Vector{Int64}(m.endo_nbr)
+    inverse_order_var = Vector{Int64}(undef, m.endo_nbr)
     for i = 1:m.n_static
         inverse_order_var[m.i_static[i]] = i
     end
@@ -171,7 +174,7 @@ function inverse_order_of_dynare_decision_rule(m::Model)
         inverse_order_var[m.i_fwrd[i]] = i + offset
     end
 
-    inverse_order_states = sortperm(cat(1,m.i_bkwrd,m.i_both))
+    inverse_order_states = sortperm(cat(m.i_bkwrd,m.i_both;dims=1))
 
     (inverse_order_var, inverse_order_states)
 end

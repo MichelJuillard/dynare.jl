@@ -339,10 +339,10 @@ end
 #
 #Performs (I_p \otimes a \otimes I_q) b, where m,n = size(a). The result is stored in c.
 #"""
-function kron_mul_elem!(c::AbstractArray, offset_c::Int64, a::AbstractArray, b::AbstractArray, offset_b::Int64, p::Int64, q::Int64)
+function kron_mul_elem!(c::AbstractVector, offset_c::Int64, a::AbstractArray, b::AbstractVector, offset_b::Int64, p::Int64, q::Int64)
     m, n = size(a)
-    size(b,1) >= n*p*q || throw(DimensionMismatch("The dimension of vector b, $(length(b)) doesn't correspond to order, ($p, $q)  and the dimensions of the matrix, $(size(a))"))
-    size(c,1) >= m*p*q || throw(DimensionMismatch("The dimension of the vector c, $(length(c)) doesn't correspond to order, ($p, $q)  and the dimensions of the matrix, $(size(a))"))
+    length(b) >= n*p*q || throw(DimensionMismatch("The dimension of vector b, $(length(b)) doesn't correspond to order, ($p, $q)  and the dimensions of the matrix, $(size(a))"))
+    length(c) >= m*p*q || throw(DimensionMismatch("The dimension of the vector c, $(length(c)) doesn't correspond to order, ($p, $q)  and the dimensions of the matrix, $(size(a))"))
 
     begin
         if p == 1 && q == 1
@@ -373,10 +373,10 @@ end
 #
 #Performs (I_p \otimes a' \otimes I_q) b, where m,n = size(a). The result is stored in c.
 #"""
-function kron_mul_elem_t!(c::AbstractArray, offset_c::Int64, a::AbstractArray, b::AbstractArray, offset_b::Int64, p::Int64, q::Int64)
+function kron_mul_elem_t!(c::AbstractVector, offset_c::Int64, a::AbstractArray, b::AbstractVector, offset_b::Int64, p::Int64, q::Int64)
     m, n = size(a)
-    size(b,1) >= m*p*q || throw(DimensionMismatch("The dimension of vector b, $(length(b)) doesn't correspond to order, ($p, $q)  and the dimensions of the matrix, $(size(a))"))
-    size(c,1) >= n*p*q || throw(DimensionMismatch("The dimension of the vector c, $(length(c)) doesn't correspond to order, ($p, $q)  and the dimensions of the matrix, $(size(a))"))
+    length(b) >= m*p*q || throw(DimensionMismatch("The dimension of vector b, $(length(b)) doesn't correspond to order, ($p, $q)  and the dimensions of the matrix, $(size(a))"))
+    length(c) >= n*p*q || throw(DimensionMismatch("The dimension of the vector c, $(length(c)) doesn't correspond to order, ($p, $q)  and the dimensions of the matrix, $(size(a))"))
 
     begin
         if p == 1 && q == 1
@@ -410,17 +410,9 @@ function kron_mul_elem_t!(c::AbstractArray, offset_c::Int64, a::AbstractArray, b
     end
 end
 
-function kron_mul_elem!(c::AbstractArray, a::AbstractArray, b::AbstractArray, p::Int64, q::Int64)
+function kron_mul_elem!(c::AbstractVector, a::AbstractArray, b::AbstractVector, p::Int64, q::Int64)
     kron_mul_elem!(c, 1, a, b, 1, p, q)
 end
-
-#function kron_mul_elem_t!(c::Vector, a::SubArray{Float64,2,Array{Float64,2},Tuple{Base.Slice{Base.OneTo{Int64}},UnitRange{Int64}},true}, b::Vector, p::Int64, q::Int64)
-#    kron_mul_elem_t!(c, , a, b, 1, p, q)
-#end
-
-#function kron_mul_elem_t!(c::SubArray{Float64,1,Array{Float64,1},Tuple{UnitRange{Int64}},true}, a::AbstractArray, b::SubArray{Float64,1,Array{Float64,1},Tuple{UnitRange{Int64}},true}, p::Int64, q::Int64)
-#    kron_mul_elem_t!(c.parent, c.offset1 + 1, a, b.parent, b.offset1 + 1, p, q)
-#end
 
 function kron_mul_elem_t!(c::AbstractVector, a::AbstractArray, b::AbstractVector, p::Int64, q::Int64)
     kron_mul_elem_t!(c, 1, a, b, 1, p, q)

@@ -1,15 +1,15 @@
-include("exceptions.jl")
-
 module GeneralizedSchurDecompositionSolver
 
-import ...DynLinAlg.SchurAlgo: DggesWS, dgges!
-import ...DynLinAlg.LinSolveAlgo: LinSolveWS, linsolve_core!
+include("exceptions.jl")
 
-import Base.LinAlg.BLAS: scal!, gemm!
+using SchurAlgo: DggesWS, dgges!
+using LinSolveAlgo: LinSolveWS, linsolve_core!
+using LinearAlgebra
+using LinearAlgebra.BLAS
 
 export GsSolverWS, gs_solver!
 
-type GsSolverWS
+struct GsSolverWS
     dgges_ws::DggesWS
     linsolve_ws::LinSolveWS
     D11::SubArray{Float64}
@@ -23,7 +23,7 @@ type GsSolverWS
     tmp3::Matrix{Float64}
     g1::Matrix{Float64}
     g2::Matrix{Float64}
-    eigval::Vector{Complex64}
+    eigval::Vector{ComplexF64}
     
     function GsSolverWS(d,e,n1)
         dgges_ws = DggesWS(Ref{UInt8}('N'), Ref{UInt8}('N'), Ref{UInt8}('N'), e, d)
@@ -42,20 +42,20 @@ type GsSolverWS
         tmp3 = Matrix{Float64}(n1,n1)
         g1 = Matrix{Float64}(n1,n1)
         g2 = Matrix{Float64}(n2,n1)
-        eigval = Vector{Complex64}(n)
+        eigval = Vector{ComplexF64}(n)
         new(dgges_ws,linsolve_ws,D11,E11,Z11,Z12,Z21,Z22,tmp1,tmp2,tmp3,g1,g2, eigval)
     end
 end
 
-"""
-    gs_solver!(ws::GsSolverWS,d::Matrix{Float64},e::Matrix{Float64},n1::Int64,qz_criterium)
-
-finds the unique stable solution for the following system:
-
-```
-d \left[\begin{array}{c}I\\g_2\end{array}\right]g_1 = e \left[\begin{array}{c}I\\g_2\end{array}\right]
-```
-"""
+#"""
+#    gs_solver!(ws::GsSolverWS,d::Matrix{Float64},e::Matrix{Float64},n1::Int64,qz_criterium)
+#
+#finds the unique stable solution for the following system:
+#
+#```
+#d \left[\begin{array}{c}I\\g_2\end{array}\right]g_1 = e \left[\begin{array}{c}I\\g_2\end{array}\right]
+#```
+#"""
 function gs_solver!(ws::GsSolverWS,d::Matrix{Float64},e::Matrix{Float64},n1::Int64,qz_criterium::Float64)
 
     dgges!('N', 'V', e, d, [0.0], ws.vsr, ws.eigval, ws.dgges_ws)
@@ -70,7 +70,7 @@ function gs_solver!(ws::GsSolverWS,d::Matrix{Float64},e::Matrix{Float64},n1::Int
 #    ws.tmp2 = ws.Z22'
 #    gx = -(ws.Z12/ws.Z22)'
     linsolve_core!(ws.linsolve_ws,Ref{UInt8}('T'),ws.Z22,ws.g2)
-    scal!(length(ws.g2),-1.0,ws.g2,1)
+    lmul!(-1.0,ws.g2)
     ws.tmp2 = ws.Z11'
 #    hx1 = ws.dgges_ws.vsr[1:nstable,1:nstable]/D[1:nstable, 1:nstable]
     ws.D11 = view(d,1:nstable,1:nstable)

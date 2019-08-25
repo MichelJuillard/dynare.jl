@@ -2,7 +2,7 @@ module DynareModel
 
 export dynare_model
 
-immutable Endo
+mutable struct Endo
     name::String
     long_name::String
     tex_name::String
@@ -14,7 +14,7 @@ immutable Endo
     end
 end
 
-immutable Exo
+mutable struct Exo
     name::String
     long_name::String
     tex_name::String
@@ -26,7 +26,7 @@ immutable Exo
     end
 end
 
-immutable Param
+mutable struct Param
     name::String
     long_name::String
     tex_name::String
@@ -38,7 +38,17 @@ immutable Param
     end
 end
 
-type dynare_model
+mutable struct Temporaries
+    static::Vector{Int64}
+    dynamic::Vector{Int64}
+    function Temporaries()
+        static = Vector{Int64}(undef, 4)
+        dynamic = Vector{Int64}(undef, 4)
+        new(static, dynamic)
+    end
+end
+
+mutable struct dynare_model
     fname::String
     dynare_version::String
     sigma_e::Matrix{Float64}
@@ -53,6 +63,9 @@ type dynare_model
     param::Vector{Param}
     orig_endo_nbr::Int64
     lead_lag_incidence::Matrix{Int64}
+    endo_nbr::Int64
+    exo_nbr::Int64
+    param_nbr::Int64
     nstatic::Int64
     nfwrd::Int64
     npred::Int64
@@ -69,18 +82,20 @@ type dynare_model
     maximum_endo_lead::Int64
     maximum_exo_lag::Int64
     maximum_exo_lead::Int64
-    max_endo_lag_orig::Int64
-    max_endo_lead_orig::Int64
-    max_exo_lag_orig::Int64
-    max_exo_lead_orig::Int64
-    max_exo_det_lag_orig::Int64
-    max_exo_det_lead_orig::Int64
-    max_lag_orig::Int64
-    max_lead_orig::Int64
+    orig_maximum_endo_lag::Int64
+    orig_maximum_endo_lead::Int64
+    orig_maximum_exo_lag::Int64
+    orig_maximum_exo_lead::Int64
+    orig_maximum_exo_det_lag::Int64
+    orig_maximum_exo_det_lead::Int64
+    orig_maximum_lag::Int64
+    orig_maximum_lead::Int64
+    orig_maximum_lag_with_diffs_expanded::Int64
     params::Vector{Float64}
     nnzderivatives::Vector{Int64}
     static::Function
     dynamic::Function
+    temporaries::Temporaries
     user_written_analytical_steady_state::Bool
     steady_state::Function
     analytical_steady_state::Bool
@@ -91,18 +106,22 @@ type dynare_model
     function dynare_model()
         fname = ""
         dynare_version = ""
-        sigma_e = Matrix{Float64}(0,0)
-        correlation_matrix = Matrix{Float64}(0,0)
+        sigma_e = Matrix{Float64}(undef, 0, 0)
+        correlation_matrix = Matrix{Float64}(undef, 0, 0)
         orig_eq_nbr = 0
         eq_nbr = 0
         ramsey_eq_nbr = 0
-        h = Matrix{Float64}(0,0)
-        correlation_matrix_me = Matrix{Float64}(0,0)
+        h = Matrix{Float64}(undef, 0,0)
+        correlation_matrix_me = Matrix{Float64}(undef, 0, 0)
         endo = []
+        endo_nbr = 0
         exo = []
+        exo_nbr = 0
         param = []
+        param_nbr = 0
         orig_endo_nbr = 0
-        lead_lag_incidence = Matrix{Int64}(0,0)
+        lead_lag_incidence = Matrix{Int64}(undef, 0, 0)
+        orig_maximum_endo_lag = 0
         nstatic = 0
         nfwrd = 0
         npred = 0
@@ -119,40 +138,41 @@ type dynare_model
         maximum_endo_lead = 0
         maximum_exo_lag = 0
         maximum_exo_lead = 0
-        max_endo_lag_orig = 0
-        max_endo_lead_orig = 0
-        max_exo_lag_orig = 0
-        max_exo_lead_orig = 0
-        max_exo_det_lag_orig = 0
-        max_exo_det_lead_orig = 0
-        max_lag_orig = 0
-        max_lead_orig = 0
+        orig_maximum_endo_lag = 0
+        orig_maximum_endo_lead = 0
+        orig_maximum_exo_lag = 0
+        orig_maximum_exo_lead = 0
+        orig_maximum_exo_det_lag = 0
+        orig_maximum_exo_det_lead = 0
+        orig_maximum_lag = 0
+        orig_maximum_lead = 0
+        orig_maximum_lag_with_diffs_expanded = 0
         params = []
         nnzderivatives = []
         f_nothing() = nothing
         static = f_nothing
         dynamic = f_nothing
+        temporaries = DynareModel.Temporaries()
         user_written_analytical_steady_state = false
         steady_state = f_nothing
         analytical_steady_state = false
         static_params_derivs = f_nothing
         dynamic_params_derivs = f_nothing
         state_var = []
-        new()
-#        new(fname, dynare_version, sigma_e, correlation_matrix,
-#            orig_eq_nbr, eq_nbr, ramsey_eq_nbr, h, correlation_matrix_me,
-#            endo, exo, param, orig_endo_nbr, lead_lag_incidence, nstatic, nfwrd,
-#            npred, nboth, nsfwrd, nspred, ndynamic, equation_tags,
-#            static_and_dynamic_models_differ, exo_names_orig_ord,
-#            maximum_lag, maximum_lead, maximum_endo_lag,
-#            maximum_endo_lead, maximum_exo_lead,
-#            params,
-            #            nnzderivatives,
-#            static, dynamic,
-#            user_written_analytical_steady_state, steady_state,
-#            analytical_steady_state, static_params_derivs,
-#            dynamic_params_derivs)
-#            )
+        new(fname, dynare_version, sigma_e, correlation_matrix,
+            orig_eq_nbr, eq_nbr, ramsey_eq_nbr, h, correlation_matrix_me,
+            endo, exo, param, orig_endo_nbr, lead_lag_incidence, endo_nbr,
+            exo_nbr, param_nbr, nstatic, nfwrd, npred, nboth, nsfwrd,
+            nspred, ndynamic, equation_tags, static_and_dynamic_models_differ,
+            exo_names_orig_ord, maximum_lag, maximum_lead, maximum_endo_lag,
+            maximum_endo_lead, maximum_exo_lag, maximum_exo_lead,
+            orig_maximum_endo_lag, orig_maximum_endo_lead, orig_maximum_exo_lag,
+            orig_maximum_exo_lead, orig_maximum_exo_det_lag,
+            orig_maximum_exo_det_lead, orig_maximum_lag, orig_maximum_lead,
+            orig_maximum_lag_with_diffs_expanded, params, nnzderivatives,
+            static, dynamic, temporaries, user_written_analytical_steady_state,
+            steady_state, analytical_steady_state, static_params_derivs,
+            dynamic_params_derivs, state_var)
     end
 end
 

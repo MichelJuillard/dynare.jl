@@ -1,11 +1,13 @@
-include("../../src/set_path.jl")
+push!(LOAD_PATH,"../../src/")
+push!(LOAD_PATH,"../models/")
 
 module TestKOrderSolver
 using Dynare
-import KOrderSolver: KOrderWs, make_gg!, make_hh!, k_order_solution!, make_rhs_1!, make_rhs_2!, store_results_1!, make_gs_su!, make_gykf!, compute_derivatives_wr_shocks!, make_a1!, generalized_sylvester_solver!, store_results_2!, make_gsk!
-import FaaDiBruno: FaaDiBrunoWs, partial_faa_di_bruno!
-import LinSolveAlgo: LinSolveWS
-using Test
+import Dynare.Solvers.KOrderSolver: KOrderWs, make_gg!, make_hh!, k_order_solution!, make_rhs_1!, make_rhs_2!, store_results_1!, make_gs_su!, make_gykf!, compute_derivatives_wr_shocks!, make_a1!, generalized_sylvester_solver!, store_results_2!, make_gsk!
+import Dynare.FaaDiBruno: FaaDiBrunoWs, partial_faa_di_bruno!
+import Dynare.DynLinAlg.LinSolveAlgo: LinSolveWS
+using Base.Test
+using ForwardDiff
 using BurnsideModel
 
 # variables order: x y

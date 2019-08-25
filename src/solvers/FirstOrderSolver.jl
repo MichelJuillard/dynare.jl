@@ -1,18 +1,19 @@
 module FirstOrderSolver
 
-import ...model: Model, get_de, get_abc
-using ...DynLinAlg.QrAlgo
-using ..Solvers.CyclicReduction
-using ..Solvers.GeneralizedSchurDecompositionSolver
-import ...DynLinAlg.LinSolveAlgo: LinSolveWS, linsolve_core!, linsolve_core_no_lu!, lu!
-import ..Solvers: ResultsPerturbationWs
-import ..SolveEyePlusMinusAkronB: EyePlusAtKronBWS, generalized_sylvester_solver!
+using LinearAlgebra
+using model: Model, get_de, get_abc
+using QrAlgo
+using CyclicReduction
+using GeneralizedSchurDecompositionSolver
+using LinSolveAlgo: LinSolveWS, linsolve_core!, linsolve_core_no_lu!, lu!
+using Perturbation: ResultsPerturbationWs
+using SolveEyePlusMinusAkronB: EyePlusAtKronBWS, generalized_sylvester_solver!
 
-import Base.LinAlg.BLAS: gemm!
+import LinearAlgebra.BLAS
 
 export FirstOrderSolverWS, first_order_solver
 
-type FirstOrderSolverWS
+struct FirstOrderSolverWS
     jacobian_static::Matrix{Float64} 
     qr_ws::QrWS
     solver_ws::Union{GsSolverWS,CyclicReductionWS}
@@ -34,8 +35,8 @@ type FirstOrderSolverWS
             jacobian_static = Matrix{Float64}(m.endo_nbr,m.n_static)
             qr_ws = QrWS(jacobian_static)
         else
-            jacobian_static = Matrix{Float64}(0,0)
-            qr_ws = QrWS(Matrix{Float64}(0,0))
+            jacobian_static = Matrix{Float64}(undef, 0,0)
+            qr_ws = QrWS(Matrix{Float64}(undef, 0,0))
         end
         if algo == "GS"
             d = zeros(m.n_dyn,m.n_dyn)
@@ -45,16 +46,16 @@ type FirstOrderSolverWS
             n = m.endo_nbr - m.n_static
             solver_ws = CyclicReductionWS(n)
         end
-        ghx = Matrix{Float64}(m.endo_nbr,m.n_bkwrd+m.n_both)
-        gx = Matrix{Float64}(m.n_fwrd+m.n_both,m.n_bkwrd+m.n_both)
-        hx = Matrix{Float64}(m.n_bkwrd+m.n_both,m.n_bkwrd+m.n_both)
-        temp1 = Matrix{Float64}(m.n_static,m.n_fwrd+m.n_both)
-        temp2 = Matrix{Float64}(m.n_static,m.n_bkwrd+m.n_both)
-        temp3 = Matrix{Float64}(m.n_static,m.n_bkwrd+m.n_both)
-        temp4 = Matrix{Float64}(m.endo_nbr - m.n_static,m.n_bkwrd+m.n_both)
-        temp5 = Matrix{Float64}(m.endo_nbr,max(m.current_exogenous_nbr,m.lagged_exogenous_nbr))
-        b10 = Matrix{Float64}(m.n_static,m.n_static)
-        b11 = Matrix{Float64}(m.n_static,length(m.p_current_ns))
+        ghx = Matrix{Float64}(undef, m.endo_nbr,m.n_bkwrd+m.n_both)
+        gx = Matrix{Float64}(undef, m.n_fwrd+m.n_both,m.n_bkwrd+m.n_both)
+        hx = Matrix{Float64}(undef, m.n_bkwrd+m.n_both,m.n_bkwrd+m.n_both)
+        temp1 = Matrix{Float64}(undef, m.n_static,m.n_fwrd+m.n_both)
+        temp2 = Matrix{Float64}(undef, m.n_static,m.n_bkwrd+m.n_both)
+        temp3 = Matrix{Float64}(undef, m.n_static,m.n_bkwrd+m.n_both)
+        temp4 = Matrix{Float64}(undef, m.endo_nbr - m.n_static,m.n_bkwrd+m.n_both)
+        temp5 = Matrix{Float64}(undef, m.endo_nbr,max(m.current_exogenous_nbr,m.lagged_exogenous_nbr))
+        b10 = Matrix{Float64}(undef, m.n_static,m.n_static)
+        b11 = Matrix{Float64}(undef, m.n_static,length(m.p_current_ns))
         linsolve_static_ws = LinSolveWS(m.n_static)
         if m.serially_correlated_exogenous
             eye_plus_at_kron_b_ws = EyePlusAtKronBWS(ma, mb, mc, 1)
@@ -97,12 +98,11 @@ function add_static!(results::ResultsPerturbationWs,ws::FirstOrderSolverWS,jacob
     end
 end
 
-using Base.Test
 function make_f1g1plusf2!(results::ResultsPerturbationWs,model,jacobian)
     nstate = model.n_bkwrd + model.n_both
     so = nstate*model.endo_nbr + 1
     for i=1:model.n_current
-        copy!(results.f1g1plusf2,(model.i_current[i]-1)*model.endo_nbr+1,jacobian,so,model.endo_nbr)
+        copyto!(results.f1g1plusf2,(model.i_current[i]-1)*model.endo_nbr+1,jacobian,so,model.endo_nbr)
         so += model.endo_nbr
     end
     offset = nstate + model.n_current
@@ -131,11 +131,11 @@ function solve_for_derivatives_with_respect_to_shocks(results::ResultsPerturbati
         linsolve_core_no_lu!(ws, Ref{UInt8}('N'), results.f1g1plusf2, results.g1_3)
     end
     if model.current_exogenous_nbr > 0
-        copy!(results.g[1], (model.n_bkwrd + model.n_both)*model.endo_nbr + 1, jacobian,
+        copyto!(results.g[1], (model.n_bkwrd + model.n_both)*model.endo_nbr + 1, jacobian,
               (model.n_fwrd + model.n_bkwrd + 2*model.n_both + model.n_current)*model.endo_nbr + 1,
               model.current_exogenous_nbr*model.endo_nbr)
-        gu = view(results.g[1],:, model.n_bkwrd + model.n_both + (1:model.current_exogenous_nbr))
-        scale!(gu, -1.0)
+        gu = view(results.g[1],:, model.n_bkwrd + model.n_both .+ (1:model.current_exogenous_nbr))
+        rmul!(gu, -1.0)
         if model.serially_correlated_exogenous
             # TO BE DONE
         else
@@ -151,7 +151,7 @@ function first_order_solver(results::ResultsPerturbationWs,ws::FirstOrderSolverW
     n = model.n_fwrd + model.n_bkwrd + model.n_both
     if algo == "CR"
         a, b, c = get_abc(model,jacobian)
-	x = zeros(a)
+	x = similar(a)
         cyclic_reduction!(x,a,b,c,ws.solver_ws,options.cycle_reduction.tol,100)
         if ws.solver_ws.info[1] > 0
             error("CR didn't converge")

@@ -1,4 +1,3 @@
+struct UnstableSystemException <: Exception end
 
-type UnstableSystemException <: Exception end
-
-type UndeterminateSystemException <: Exception end
+struct UndeterminateSystemException <: Exception end

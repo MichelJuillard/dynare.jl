@@ -84,6 +84,24 @@ function test_2()
     KroneckerUtils.a_mul_kron_b!(c,a,b,work)
     @test c ≈ a*kron(b[1],b[2])
 
+    println("test0")
+    ma = 2
+    na = 8
+    a = randn(ma,na)
+    mb1 = 4
+    nb1 = 2
+    b1 = randn(mb1,nb1)
+    mb2 = 2
+    nb2 = 2
+    b2 = randn(mb2,nb2)
+    b = [b1, b2]
+    c = randn(ma,nb1*nb2)
+    work1 = zeros(16)
+    work2 = zeros(16)
+    KroneckerUtils.a_mul_kron_b!(c,a,b,work1,work2)
+    @test c ≈ a*kron(b[1],b[2])
+
+    
     order = 3
     ma = 2
     na = 4

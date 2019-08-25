@@ -1,12 +1,12 @@
 module CyclicReduction
 
-import ...DynLinAlg.LinSolveAlgo: LinSolveWS, linsolve_core!
+using LinSolveAlgo: LinSolveWS, linsolve_core!
 
-import Base.LinAlg.BLAS: scal!, gemm!
-
+using LinearAlgebra
+using LinearAlgebra.BLAS: gemm!
 export CyclicReductionWS, cyclic_reduction!, cyclic_reduction_check
 
-type CyclicReductionWS
+mutable struct CyclicReductionWS
     linsolve_ws::LinSolveWS
     ahat1::Matrix{Float64}
     a1copy::Matrix{Float64}
@@ -25,19 +25,19 @@ type CyclicReductionWS
 
     function CyclicReductionWS(n)
         linsolve_ws = LinSolveWS(n)
-        ahat1 = Matrix{Float64}(n,n)
-	a1copy = Matrix{Float64}(n,n)
-        m = Matrix{Float64}(2*n,2*n)
+        ahat1 = Matrix{Float64}(undef, n,n)
+	a1copy = Matrix{Float64}(undef, n,n)
+        m = Matrix{Float64}(undef, 2*n,2*n)
         m00 = view(m,1:n,1:n)
-        m02 = view(m,1:n,n+(1:n))
-        m20 = view(m,n+(1:n),1:n)
-        m22 = view(m,n+(1:n),n+(1:n))
-        m1 = Matrix{Float64}(n,2*n)
+        m02 = view(m,1:n,n .+ (1:n))
+        m20 = view(m,n .+ (1:n), 1:n)
+        m22 = view(m,n .+ (1:n),n .+(1:n))
+        m1 = Matrix{Float64}(undef, n, 2*n)
         m1_a0 = view(m1,1:n,1:n)
-        m1_a2 = view(m1,1:n,n+(1:n))
-        m2 = Matrix{Float64}(2*n,n)
-        m2_a0 = view(m2,1:n,1:n)
-        m2_a2 = view(m2,n+(1:n),1:n)
+        m1_a2 = view(m1,1:n,n .+ (1:n))
+        m2 = Matrix{Float64}(undef, 2*n, n)
+        m2_a0 = view(m2, 1:n, 1:n)
+        m2_a2 = view(m2, n .+ (1:n), 1:n)
         info = 0
         new(linsolve_ws,ahat1,a1copy,m, m00, m02, m20, m22, m1, m1_a0, m1_a2, m2, m2_a0, m2_a2, info) 
     end
@@ -75,25 +75,25 @@ julia> cyclic_reduction!(x,a0,a1,a2,ws,1e-8,50)
 ```
 """
 function cyclic_reduction!(x::Array{Float64},a0::Array{Float64},a1::Array{Float64},a2::Array{Float64},ws::CyclicReductionWS, cvg_tol::Float64, max_it::Int64)
-    copy!(x,a0)
-    copy!(ws.ahat1,1,a1,1,length(a1))
-    @inbounds copy!(ws.m1_a0, a0)
-    @inbounds copy!(ws.m1_a2, a2)
-    @inbounds copy!(ws.m2_a0, a0)
-    @inbounds copy!(ws.m2_a2, a2)
+    copyto!(x,a0)
+    copyto!(ws.ahat1,1,a1,1,length(a1))
+    @inbounds copyto!(ws.m1_a0, a0)
+    @inbounds copyto!(ws.m1_a2, a2)
+    @inbounds copyto!(ws.m2_a0, a0)
+    @inbounds copyto!(ws.m2_a2, a2)
     it = 0
     @inbounds while it < max_it
         #        ws.m = [a0; a2]*(a1\[a0 a2])
-	copy!(ws.a1copy,a1)
+	copyto!(ws.a1copy,a1)
         linsolve_core!(ws.linsolve_ws,Ref{UInt8}('N'),ws.a1copy,ws.m1)
         gemm!('N','N',-1.0,ws.m2,ws.m1,0.0,ws.m)
         @simd for i in eachindex(a1)
             a1[i] += ws.m02[i] + ws.m20[i]
         end
-        copy!(ws.m1_a0, ws.m00)
-        copy!(ws.m1_a2, ws.m22)
-        copy!(ws.m2_a0, ws.m00)
-        copy!(ws.m2_a2, ws.m22)
+        copyto!(ws.m1_a0, ws.m00)
+        copyto!(ws.m1_a2, ws.m22)
+        copyto!(ws.m2_a0, ws.m00)
+        copyto!(ws.m2_a2, ws.m22)
         if any(isinf.(ws.m))
             if norm(ws.m1_a0) < cvg_tol
                 ws.info = 2
@@ -123,7 +123,7 @@ function cyclic_reduction!(x::Array{Float64},a0::Array{Float64},a1::Array{Float6
         return
     else
         linsolve_core!(ws.linsolve_ws,Ref{UInt8}('N'),ws.ahat1,x)
-        @inbounds scal!(length(x),-1.0,x,1)
+        @inbounds lmul!(-1.0,x)
         ws.info = 0
     end        
 end

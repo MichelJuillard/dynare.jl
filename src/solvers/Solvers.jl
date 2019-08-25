@@ -1,17 +1,11 @@
 module Solvers
 
-include("perturbation.jl")
+using Perturbation
 export ResultsPerturbationWs
-
-include("CyclicReduction.jl")
-using .CyclicReduction
-include("GeneralizedSchurDecompositionSolver.jl")
-using .GeneralizedSchurDecompositionSolver
-include("SolveEyePlusMinusAkronB.jl")
-using .SolveEyePlusMinusAkronB
-include("FirstOrderSolver.jl")
-using .FirstOrderSolver
-include("KOrderSolver.jl")
-using .KOrderSolver
+using CyclicReduction
+using GeneralizedSchurDecompositionSolver
+using SolveEyePlusMinusAkronB
+using FirstOrderSolver
+using KOrderSolver
 
 end
