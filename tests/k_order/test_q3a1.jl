@@ -12,6 +12,7 @@ using Dynare
 using FaaDiBruno
 using KOrderSolver
 using KroneckerUtils
+using LinSolveAlgo
 using SolveEyePlusMinusAkronB
 
 function folded_linear_indices(c::CartesianIndices)
@@ -95,6 +96,15 @@ x = zeros(3,exo_nbr)
 params = mod.params
 steady_state = ss
 
+n1 = length(ipre) + exo_nbr
+LI2 = LinearIndices((n1,n1))
+ug2_3 = zeros(endo_nbr, length(LI2))
+unfold_dynarepp!(ug2_3, g2_3, n1, 2)
+inverse_order_var, inverse_order_states = inverse_order_of_dynare_decision_rule(m)
+reorder = vcat(inverse_order_states, length(ipre) .+ (1:exo_nbr))
+rLI2 = vec(LI2[ntuple(x->reorder,2)...])
+r_ug2_3 = ug2_3[inverse_order_var, rLI2]
+
 it_ = 2
 residual = zeros(endo_nbr)
 nd = maximum(mod.lead_lag_incidence) + exo_nbr
@@ -137,7 +147,6 @@ end
 options = Options(cr_opt,gs_opt)
 first_order_solver(results_perturbation_ws, first_order_ws, algo, f[1], m, options)
 
-inverse_order_var, inverse_order_states = inverse_order_of_dynare_decision_rule(m)
 n_states = m.n_bkwrd + m.n_both
 g1_endo = copy(g1_1[:, 1:(n_states + exo_nbr)])
 vg1_endo = view(g1_endo,inverse_order_var, inverse_order_states)
@@ -158,116 +167,95 @@ ndest = ws.nstate + 2*ws.nshock + 1
 
 order = 2
 
-KOrderSolver.make_gg!(ws.gg, g, order, ws)
-#@test ws.gg[2][1:ws.nstate, vec(D[2][1:nsrc,1:nsrc])] ≈ g[2][ws.state_index,:]
-#@test ws.gg[2][ws.nstate .+ (1:ws.nshock), 1:ndest] ≈ zeros(ws.nshock, ndest) 
+@testset "Order = 2" begin
+    @testset "rhs 2"  begin
+        KOrderSolver.make_gg!(ws.gg, g, order, ws)
+        #@test ws.gg[2][1:ws.nstate, vec(D[2][1:nsrc,1:nsrc])] ≈ g[2][ws.state_index,:]
+        #@test ws.gg[2][ws.nstate .+ (1:ws.nshock), 1:ndest] ≈ zeros(ws.nshock, ndest) 
 
-KOrderSolver.make_hh!(ws.hh, g, ws.gg, 1, ws)
-@test ws.hh[1][1:ws.nstate,1:ws.nstate] ≈ Matrix{Float64}(I, ws.nstate, ws.nstate)
-@test ws.hh[1][ws.nstate .+ (1:ws.ncur), 1:nsrc] ≈ g[1]
-@test ws.hh[1][ws.nstate + ws.ncur .+ ws.fwrd_index, 1:nsrc] ≈ g[1][ws.fwrd_index,1:ws.nstate]*g[1][ws.state_index,1:nsrc] 
-@test ws.hh[1][:,ws.nstate + ws.nshock + 1] ≈ zeros(ws.nfwrd + ws.ncur + ws.nstate + ws.nshock)            
-println("\nhh[1]")
-display(ws.hh[1])
+        KOrderSolver.make_hh!(ws.hh, g, ws.gg, 1, ws)
+        @test ws.hh[1][1:ws.nstate,1:ws.nstate] ≈ Matrix{Float64}(I, ws.nstate, ws.nstate)
+        @test ws.hh[1][ws.nstate .+ (1:ws.ncur), 1:nsrc] ≈ g[1]
+        @test ws.hh[1][ws.nstate + ws.ncur .+ ws.fwrd_index, 1:nsrc] ≈ g[1][ws.fwrd_index,1:ws.nstate]*g[1][ws.state_index,1:nsrc] 
+        @test ws.hh[1][:,ws.nstate + ws.nshock + 1] ≈ zeros(ws.nfwrd + ws.ncur + ws.nstate + ws.nshock)            
 
-rhs = reshape(view(ws.rhs,1:ws.nvar*ndest^2),ws.nvar,ndest^2)
-FaaDiBruno.partial_faa_di_bruno!(rhs,f,ws.hh,order,ws.faa_di_bruno_ws_2)
-@test  rhs ≈ f[2]*kron(ws.hh[1], ws.hh[1])
-println("\nrhs")
-display(rhs)
-rhs1 = -reshape(view(ws.rhs1,1:ws.nvar*ws.nstate^order),
-               ws.nvar, ws.nstate^order)
-KOrderSolver.pane_copy!(rhs1, rhs, 1:ws.nvar, 1:ws.nvar, 1:ws.nstate, 1:ws.nstate, ws.nstate, ws.nstate + 2*ws.nshock + 1, order)
-a = ws.a
-b = ws.b
-KOrderSolver.make_a!(a, f, g, ws.ncur, ws.cur_index, ws.nvar, ws.nstate, ws.nfwrd, ws.fwrd_index, ws.state_index)
-target = zeros(ws.nvar,ws.nvar)
-target[:,ws.cur_index] = f[1][:,ws.nstate .+ ws.cur_index]
-target[:,ws.state_index] .+= f[1][:,ws.nstate + ws.ncur .+ (1:ws.nfwrd)]*g[1][ws.fwrd_index, 1:ws.nstate]
-@test a ≈ target
-println("\na")
-display(a)
-a_orig = copy(a)
-KOrderSolver.make_b!(b, f, ws)
-@test b[:,ws.fwrd_index] ≈ f[1][:,ws.nstate + ws.ncur .+ (1:ws.nfwrd)]
-println("\nb")
-display(b)
-b_orig = copy(b)
-c = view(g[1],ws.state_index,1:ws.nstate)
-println("\nc")
-display(c)
-c_orig = copy(c)
-println("\nrhs1")
-display(rhs1)
-ws.gs_ws = EyePlusAtKronBWS(ws.nvar,ws.nvar,ws.nstate,order)
-rhs1_orig = copy(rhs1)
-d = vec(rhs1)
-SolveEyePlusMinusAkronB.generalized_sylvester_solver!(a,b,c,d,order,ws.gs_ws)
-x = ws.gs_ws.result
-@test a_orig*x + b_orig*x*kron(c_orig,c_orig) ≈ rhs1_orig
-println("\nx")
-display(x)
-println("")
+        rhs = reshape(view(ws.rhs,1:ws.nvar*ndest^2),ws.nvar,ndest^2)
+        FaaDiBruno.partial_faa_di_bruno!(rhs,f,ws.hh,order,ws.faa_di_bruno_ws_2)
+        @test  rhs ≈ f[2]*kron(ws.hh[1], ws.hh[1])
+    end
+    
+    @testset "states 2" begin
+        rhs = reshape(view(ws.rhs,1:ws.nvar*ndest^2),ws.nvar,ndest^2)
+        rhs1 = reshape(view(ws.rhs1,1:ws.nvar*ws.nstate^order),
+                        ws.nvar, ws.nstate^order)
+        KOrderSolver.pane_copy!(rhs1, rhs, 1:ws.nvar, 1:ws.nvar, 1:ws.nstate, 1:ws.nstate, ws.nstate, ws.nstate + 2*ws.nshock + 1, order)
 
-k_order_solution!(results_perturbation_ws.g, f, moments, order, ws)
-n1 = ws.nstate + ws.nshock 
-LI2 = LinearIndices((n1,n1))
-ug2_3 = zeros(ws.nvar, length(LI2))
-unfold_dynarepp!(ug2_3, g2_3, ws.nstate + ws.nshock, order)
-reorder = vcat(inverse_order_states, ws.nstate .+ (1:ws.nshock))
-rLI2 = vec(LI2[ntuple(x->reorder,2)...])
-r_ug2_3 = ug2_3[inverse_order_var, rLI2]
-@test results_perturbation_ws.g[2][:, [1, 2, 6, 7]] ≈ 2*r_ug2_3[:,[1, 2, 5, 6]]
-@test results_perturbation_ws.g[2][:, [3, 4, 8, 9]] ≈ 2*r_ug2_3[:,[3, 4, 7, 8]]
+        KOrderSolver.make_a!(ws.a, f, g, ws.ncur, ws.cur_index, ws.nvar, ws.nstate, ws.nfwrd, ws.fwrd_index, ws.state_index)
+        target = zeros(ws.nvar,ws.nvar)
+        target[:,ws.cur_index] = f[1][:,ws.nstate .+ ws.cur_index]
+        target[:,ws.state_index] .+= f[1][:,ws.nstate + ws.ncur .+ (1:ws.nfwrd)]*g[1][ws.fwrd_index, 1:ws.nstate]
+        @test ws.a ≈ target
+
+        a_orig = copy(ws.a)
+        KOrderSolver.make_b!(ws.b, f, ws)
+        @test ws.b[:,ws.fwrd_index] ≈ f[1][:,ws.nstate + ws.ncur .+ (1:ws.nfwrd)]
+
+        b_orig = copy(ws.b)
+        c = view(g[1],ws.state_index,1:ws.nstate)
+        c_orig = copy(c)
+        ws.gs_ws = EyePlusAtKronBWS(ws.nvar,ws.nvar,ws.nstate,order)
+        rhs1_orig = copy(rhs1)
+        d = vec(rhs1)
+        a = copy(ws.a)
+        b = copy(ws.b)
+        SolveEyePlusMinusAkronB.generalized_sylvester_solver!(a,b,c,d,order,ws.gs_ws)
+        x = ws.gs_ws.result
+        @test a_orig*x + b_orig*x*kron(c_orig,c_orig) ≈ rhs1_orig
+
+        k_order_solution!(results_perturbation_ws.g, f, moments, order, ws)
+        @test results_perturbation_ws.g[2][:, [1, 2, 6, 7]] ≈ 2*r_ug2_3[:,[1, 2, 5, 6]]
+    end
+
+    @testset "shocks 2" begin
+        fp = view(f[1],:,ws.nstate + ws.ncur .+ (1:ws.nfwrd))
+
+        KOrderSolver.make_gs_su!(ws.gs_su, g[1], ws.nstate, ws.nshock, ws.state_index)
+        @test ws.gs_su == g[1][ws.state_index, 1:ws.nstate + ws.nshock]
+        
+        gykf = reshape(view(ws.gykf,1:ws.nfwrd*ws.nstate^order),
+                       ws.nfwrd,ws.nstate^order)
+        KOrderSolver.make_gykf!(gykf, g[order], ws.nstate, ws.nfwrd, ws.nshock, ws.fwrd_index, order)
+        @test gykf ≈ g[2][ws.fwrd_index, vcat(1:ws.nstate, ws.nstate + ws.nshock +1 .+ (1:ws.nstate))]
+            
+        gu = view(ws.gs_su,:,ws.nstate .+ (1:ws.nshock))
+        rhs1 = reshape(view(ws.rhs1,:1:ws.nvar*(ws.nshock*(ws.nstate+ws.nshock))^(order-1)),
+                       ws.nvar,(ws.nshock*(ws.nstate+ws.nshock))^(order-1))
+        work1 = view(ws.work1,1:ws.nvar*(ws.nstate + ws.nshock + 1)^order)
+        work2 = view(ws.work2,1:ws.nvar*(ws.nstate + ws.nshock + 1)^order)
+        a_mul_b_kron_c_d!(rhs1,fp,gykf,gu,ws.gs_su,order,work1,work2)
+        @test rhs1 ≈ fp*gykf*kron(gu,ws.gs_su)
+            
+        rhs = reshape(view(ws.rhs,1:ws.nvar*(ws.nstate+2*ws.nshock+1)^order),
+                      ws.nvar,(ws.nstate+2*ws.nshock+1)^order)
+        rhs1_orig = copy(rhs1)
+        KOrderSolver.make_rhs_2!(rhs1, rhs, ws.nstate, ws.nshock, ws.nvar)
+        @test rhs1 == rhs[:,vcat(15:18, 22:25)] - rhs1_orig
+
+        rhs1_orig = copy(rhs1)
+        linsolve_core!(ws.linsolve_ws_1,Ref{UInt8}('N'),ws.a,rhs1)
+        @test rhs1 ≈ ws.a\rhs1_orig
+
+        KOrderSolver.store_results_2!(g[order], rhs1, ws.nstate, ws.nshock, order)
+        @test g[2][:, [3, 8, 13, 18, 4, 9, 14, 19]] == rhs1
+        
+        @test results_perturbation_ws.g[2][:, [3, 4, 8, 9]] ≈ 2*r_ug2_3[:,[3, 4, 7, 8]]
+        @test results_perturbation_ws.g[2][:, vcat(1:4, 6:9, 11:14, 16:19)] ≈ 2*r_ug2_3
+    end
+end
 
 order = 3
 #k_order_ws_3 = KOrderWs(endo_nbr,length(ifwd),length(ipre),endo_nbr,exo_nbr,ifwd,ipre,collect(1:endo_nbr),1:length(ipre),order)
-k_order_solution!(results_perturbation_ws.g, f, moments, order, ws)
+#k_order_solution!(results_perturbation_ws.g, f, moments, order, ws)
 
-#=
-println("Timing k_order_solution!")
-@time k_order_solution!(results_perturbation_ws.g, f, moments, 2, k_order_ws)
-=#
-
-g2a = Array{Float64}(undef, endo_nbr, n_states + exo_nbr + 1, n_states + exo_nbr + 1)
-
-
-for i = 1:n_states + exo_nbr
-    if i <= n_states
-        col1 = inverse_order_states[i]
-    else
-        col1 = i
-    end
-    for j = i:n_states + exo_nbr
-        if j <= n_states
-            col2 = inverse_order_states[j]
-        else
-            col2 = j
-        end
-        if col1 > col2
-            c1 = col2
-            c2 = col1
-        else
-            c1 = col1
-            c2 = col2
-        end
-        col = round(Int64,(n_states + exo_nbr + 1)*(n_states + exo_nbr)/2 - (n_states + exo_nbr - c1 + 2)*(n_states + exo_nbr - c1 + 1)/2 + c2 - c1 + 1)
-        for k = 1:endo_nbr
-            g2a[k, i, j] = 2*g2[inverse_order_var[k], col]
-            g2a[k, j, i] = g2a[k, i, j]
-        end
-    end
-end
-g2b = reshape(g2a, endo_nbr, (n_states + exo_nbr + 1)^2)
-
-g2b[:,end] = 2*g0[inverse_order_var]
-        
-@test g2b ≈ results_perturbation_ws.g[2]
-
-#=
-using Profile
-@profile k_order_solution!(g,f,moments,2,k_order_ws)
-@time k_order_solution!(g,f,moments,2,k_order_ws)
-=#
 
 end

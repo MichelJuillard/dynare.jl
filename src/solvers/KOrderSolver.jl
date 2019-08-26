@@ -341,7 +341,7 @@ function make_rhs_2!(rhs1::AbstractArray, rhs::AbstractArray, nstate::Int64, nsh
         scol = base 
         for j = 1:(nstate + nshock)
             @simd for k = 1:nvar
-                rhs1[k,dcol] = -rhs1[k,dcol] - rhs[k,scol]
+                rhs1[k,dcol] = -rhs1[k,dcol] + rhs[k,scol]
             end
             dcol += 1
             scol +=  1
@@ -558,7 +558,6 @@ solves (f^1_0 + f^1_+ gx)X + f^1_+ X (gx ⊗ ... ⊗ gx) = D
 
 """
 function k_order_solution!(g,f,moments,order,ws)
-    println("Order $order")
     nstate = ws.nstate
     nshock = ws.nshock
     gg = ws.gg
@@ -577,7 +576,6 @@ function k_order_solution!(g,f,moments,order,ws)
     nvar = ws.nvar
     a = ws.a
     b = ws.b
-    #    c = ws.c
     linsolve_ws = ws.linsolve_ws_1
     work1 = ws.work1
     work2 = ws.work2
@@ -593,11 +591,7 @@ function k_order_solution!(g,f,moments,order,ws)
         make_b!(b, f, ws)
     else
         make_hh!(hh, g, gg, order, ws)
-        println("hh")
-        display(hh)
         faa_di_bruno!(rhs,f,hh,order,faa_di_bruno_ws_2)
-        println("rhs")
-        display(rhs)
     end
     lmul!(-1,rhs)
     # select only endogenous state variables on the RHS
@@ -607,11 +601,10 @@ function k_order_solution!(g,f,moments,order,ws)
     generalized_sylvester_solver!(a,b,c,d,order,gs_ws)
     store_results_1!(g[order], gs_ws_result, nstate, nshock, nvar, order)
     compute_derivatives_wr_shocks!(ws,f,g,order)
-#    store_results_2!(g[order], nstate, nshock, nvar, rhs1, order)
     store_results_2!(g[order], rhs1, nstate, nshock, order)
-    make_gsk!(g, f, moments[2], a, rhs, rhs1,
-              nfwrd, nstate, nvar, ncur, nshock,
-              fwrd_index, linsolve_ws, work1, work2)
+#    make_gsk!(g, f, moments[2], a, rhs, rhs1,
+#              nfwrd, nstate, nvar, ncur, nshock,
+#              fwrd_index, linsolve_ws, work1, work2)
 end
 
 end
