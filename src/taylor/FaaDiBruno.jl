@@ -74,7 +74,7 @@ function faa_di_bruno!(dfg::AbstractArray{Float64},f::Array{Matrix{Float64},1},g
         mul!(dfg,f[1],g[1])
     elseif order == 2
         mul!(dfg,f[1],g[2])
-        a_mul_kron_b!(work1,f[2],g[1],2)
+        a_mul_kron_b!(work1,f[2],g[1],2, ws.work1, ws.work2)
         dfg .+= work1
     else
         for i = 1:order

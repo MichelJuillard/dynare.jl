@@ -251,6 +251,21 @@ order = 2
         @test results_perturbation_ws.g[2][:, [3, 4, 8, 9]] ≈ 2*r_ug2_3[:,[3, 4, 7, 8]]
         @test results_perturbation_ws.g[2][:, vcat(1:4, 6:9, 11:14, 16:19)] ≈ 2*r_ug2_3
     end
+
+    @testset "σ²" begin
+        KOrderSolver.update_gg_1!(ws.gg, g, 2, ws)
+        @test ws.gg[2][1:2, vcat(1:4, 8:11, 15:18, 22:25)] == g[2][ws.state_index, vcat(1:4, 6:9, 11:14, 16:19)]
+
+        KOrderSolver.make_hh!(ws.hh, g, ws.gg, 2, ws)
+        KOrderSolver.update_hh!(ws.hh, g, ws.gg, 2, ws)
+        @test ws.hh[2][3:5, vcat(1:4, 8:11, 15:18, 22:25)]  == g[2][:, vcat(1:4, 6:9, 11:14, 16:19)]
+        target = g[2][1:2, vcat(1:2, 6:7)]*kron(g[1][2:3, 1:4], g[1][2:3, 1:4]) + g[1][1:2, 1:2]*g[2][2:3, vcat(1:4, 6:9, 11:14, 16:19)]
+        @test ws.hh[2][6:7, vcat(1:4, 8:11, 15:18, 22:25)] ≈ target
+#        gyuσΣ = zeros(ws.nvar, (ws.nstate + 2*ws.nshock + 1)^2)
+#        KOrderSolver.collect_future_shocks!(gyuσΣ, g[2], 1, 1, 1, ws.nstate, ws.nvar, ws.nshock)
+#        display(ws.g[2])
+#        display(ws.ws.gyuσΣ)
+    end
 end
 
 order = 3

@@ -30,6 +30,7 @@ mutable struct KOrderWs
     gykf::Vector{Float64}
     gs_su::Matrix{Float64}
     a::Matrix{Float64}
+    a1::Matrix{Float64}
     b::Matrix{Float64}
     c::Matrix{Float64}
     work1::Vector{Float64}
@@ -54,15 +55,16 @@ mutable struct KOrderWs
         rhs = zeros(nvar*(nstate+2*nshock+1)^order)
         rhs1 = zeros(nvar*max(nvar^order,nshock*(nstate+nshock)^(order-1)))
         gykf = zeros(nfwrd*nstate^order)
-        gs_su = Array{Float64}(undef, nstate,nstate+nshock)
+        gs_su = Array{Float64}(undef, nstate, nstate+nshock)
         a = zeros(nvar,nvar)
+        a1 = zeros(nvar,nvar)
         b = zeros(nvar,nvar)
         c = zeros(nstate,nstate)
         work1 = zeros(nvar*(nstate + nshock + 1)^order)
         work2 = similar(work1)
         gs_ws = EyePlusAtKronBWS(nvar,nvar,nstate,order)
         new(nvar,nfwrd,nstate,ncur,nshock,fwrd_index,state_index,cur_index,state_range,gfwrd,gg,hh,
-            rhs,rhs1,my,zy,dy,gykf,gs_su,a,b,c,work1,work2,faa_di_bruno_ws_1,faa_di_bruno_ws_2,linsolve_ws_1, gs_ws)
+            rhs,rhs1,my,zy,dy,gykf,gs_su,a,a1,b,c,work1,work2,faa_di_bruno_ws_1,faa_di_bruno_ws_2,linsolve_ws_1, gs_ws)
     end
 end
 
@@ -75,10 +77,10 @@ end
 
     
 """
-    function make_gg!(gg,g,order,ws)
+    function make_gg_s!(gg,g,order,ws)
 
 assembles the derivatives of function
-gg(y,u,ϵ,σ) = [g_state(y,u,σ); ϵ; σ] at order 'order' 
+gg(y,u,ϵ,σ) = [g_state(y,u,σ); ϵ; σ] at  order 'order' 
 with respect to [y, u, σ, ϵ]
 """  
 function make_gg!(gg,g,order,ws)
@@ -98,6 +100,20 @@ function make_gg!(gg,g,order,ws)
         pane_copy!(gg[order], g[order], 1:ws.nstate, ws.state_index, 1:mgg1, 1:mgg1,
                     ngg1, mgg1, order)
     end
+end
+
+"""
+    function update_gg_s!(gg,g,order,ws)
+
+updates the derivatives of function
+gg(y,u,ϵ,σ) = [g_state(y,u,σ); ϵ; σ] after computation of g_s at order 'order' 
+with respect to [y, u, ϵ]
+"""  
+function update_gg_1!(gg,g,order,ws)
+    ngg1 = ws.nstate + 2*ws.nshock 
+    mgg1 = ws.nstate + ws.nshock 
+    pane_copy!(gg[order], g[order], 1:ws.nstate, ws.state_index, 1:mgg1, 1:mgg1,
+               ngg1+1, mgg1+1, order)
 end
 
 """
@@ -128,11 +144,18 @@ function  make_hh!(hh, g, gg, order, ws)
         # derivatives for g(g(y,u,σ),ϵ,σ)
         vh1 = view(hh[order],ws.nstate + ws.ncur .+ (1:ws.nfwrd),:)
         partial_faa_di_bruno!(vh1, ws.gfwrd, gg, order, ws.faa_di_bruno_ws_1)
-        i1 = CartesianIndex(1,(repeat([1], order - 1))...,)
-        i2 = CartesianIndex(1,(repeat([ws.nstate + ws.nshock + 1], order - 1))...,)
-        hdims = Tuple(repeat([ws.nstate + 2*ws.nshock + 1],order))
         pane_copy!(hh[order-1], g[order-1], ws.nstate .+ ws.cur_index, ws.cur_index, 1:ws.nstate, 1:ws.nstate, ws.nstate, ws.nstate + 2*ws.nshock + 1, order-1)
     end        
+end
+
+function update_hh!(hh, g, gg, order, ws)
+    # derivatives of g() for forward looking variables
+    copyto!(ws.gfwrd[order],view(g[order],ws.fwrd_index,:))
+    # derivatives for g(g(y,u,σ),ϵ,σ)
+    vh1 = view(hh[order],ws.nstate + ws.ncur .+ (1:ws.nfwrd),:)
+    faa_di_bruno!(vh1, ws.gfwrd, gg, order, ws.faa_di_bruno_ws_1)
+    pane_copy!(hh[order], g[order], ws.nstate .+ ws.cur_index, ws.cur_index, 1:(ws.nstate+ws.nshock),
+               1:(ws.nstate+ws.nshock), ws.nstate + 2*ws.nshock + 1, ws.nstate + ws.nshock + 1, order)
 end
 
 function pane_copy_1!(dest, src, i_row_d, i_row_s, i_col_d, i_col_s,
@@ -499,12 +522,13 @@ function make_gsk!(g::Vector{<:AbstractArray},
                    ncur::Int64, nshock::Int64,
                    fwrd_index::Vector{Int64},
                    linsolve_ws_1::LinSolveWS, work1::Vector{Float64},
-                   work2::Vector{Float64})
+                   work2::Vector{Float64}, a1)
 
     # solves a*g_σ^2 = (-B_uu - f1*g_uu )Σ
+    copyto!(a1, a)
     @inbounds for i=1:nfwrd
         @simd for j=1:nvar
-            a[j,fwrd_index[i]] += f[1][j, nstate + ncur + i]
+            a1[j,fwrd_index[i]] += f[1][j, nstate + ncur + i]
         end
     end
 
@@ -545,7 +569,7 @@ function make_gsk!(g::Vector{<:AbstractArray},
     
     vwork2 = view(work2,1:nvar)
     mul!(vwork2,vrhs1,moments)
-    linsolve_core!(linsolve_ws_1,Ref{UInt8}('N'),a,vwork2)
+    linsolve_core!(linsolve_ws_1,Ref{UInt8}('N'),a1,vwork2)
     dcol = (nstate + nshock + 1)
     dcol2 = ((dcol - 1)*dcol + nstate + nshock)*nvar + 1
     copyto!(g[2],dcol2,vwork2,1,nvar)
