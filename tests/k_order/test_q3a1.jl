@@ -58,8 +58,8 @@ target_I = [1, 2, 3, 2, 4, 5, 3, 5, 6,
 @test ug == g[:, target_I]
 
 cd("models/q3a1")
-run(`/home/michel/projects/dynare/git/stable/dynare++/src/dynare++ --no-centralize q3a1_1.mod`)
-run(`/home/michel/projects/dynare/git/stable/dynare++/src/dynare++ --no-centralize q3a1_3.mod`)
+run(`/home/michel/projects/dynare/git/master2/dynare++/src/dynare++ --no-centralize q3a1_1.mod`)
+run(`/home/michel/projects/dynare/git/master2/dynare++/src/dynare++ --no-centralize q3a1_3.mod`)
 run(`/home/michel/projects/dynare/git/master2/matlab/preprocessor64/dynare_m q3a1_3.mod output=third language=julia`)
 cd("../..")
 
