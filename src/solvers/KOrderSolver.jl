@@ -77,7 +77,7 @@ end
 
     
 """
-    function make_gg_s!(gg,g,order,ws)
+    function make_gg!(gg,g,order,ws)
 
 assembles the derivatives of function
 gg(y,u,ϵ,σ) = [g_state(y,u,σ); ϵ; σ] at  order 'order' 
@@ -158,21 +158,29 @@ function update_hh!(hh, g, gg, order, ws)
                1:(ws.nstate+ws.nshock), ws.nstate + 2*ws.nshock + 1, ws.nstate + ws.nshock + 1, order)
 end
 
-function pane_copy_1!(dest, src, i_row_d, i_row_s, i_col_d, i_col_s,
+function pane_copy!(dest, src, i_row_d, i_row_s, i_col_d, i_col_s,
                       d_dim, s_dim, offset_d, offset_s, order)
+    nc = length(i_col_s)
     if order > 1
+        os = offset_s
+        od = offset_d
         inc_d = d_dim^(order-1)
         inc_s = s_dim^(order-1)
-        for i in zip(i_col_d, i_col_s)
-            offset_d_1 = offset_d + (i[1] - 1)*inc_d
-            offset_s_1 = offset_s + (i[2] - 1)*inc_s
-            pane_copy_1!(dest, src, i_row_d, i_row_s, i_col_d, i_col_s,
-                         d_dim, s_dim, offset_d_1, offset_s_1, order-1)
+        for i = 1:nc
+            pane_copy!(dest, src, i_row_d, i_row_s, i_col_d, i_col_s,
+                       d_dim, s_dim, od, os, order-1)
+            od += inc_d
+            os += inc_s
         end
     else
-        vd = view(dest, i_row_d , offset_d .+ i_col_d)
-        vs = view(src, i_row_s, offset_s .+ i_col_s)
-        vd .= vs
+        nr = length(i_row_d)
+        @inbounds for i = 1:nc
+            kd = i_col_d[i] + offset_d
+            ks = i_col_s[i] + offset_s
+            @simd for j = 1:nr
+                dest[i_row_d[j], kd] = src[i_row_s[j], ks]
+            end
+        end
     end
 end
 
@@ -180,8 +188,8 @@ function pane_copy!(dest, src, i_row_d, i_row_s, i_col_d, i_col_s,
                     d_dim, s_dim, order)
     offset_d = 0
     offset_s = 0
-    pane_copy_1!(dest, src, i_row_d, i_row_s, i_col_d,
-                         i_col_s, d_dim, s_dim, offset_d, offset_s, order)
+    pane_copy!(dest, src, i_row_d, i_row_s, i_col_d,
+               i_col_s, d_dim, s_dim, offset_d, offset_s, order)
 end    
 
 function make_d1!(ws, order)
