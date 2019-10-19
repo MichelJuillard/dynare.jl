@@ -43,8 +43,8 @@ mutable struct KOrderWs
         n1 = nstate + nshock + 1
         n2 = n1 + nshock
         n3 = nfwrd+nvar+nstate+nshock
-        gfwrd = [zeros(nfwrd,n1^i) for i = 1:order]
-        gg = [zeros(n1,n2^i) for i = 1:order]
+        gfwrd = [zeros(nfwrd,nstate^i) for i = 1:order]
+        gg = [zeros(nfwrd,n1^i) for i = 1:order]
         hh = [zeros(n3, n2^i) for i = 1:order]
         my = [zeros(ncur+nstate, nstate^i) for i = 1:order]
         zy = [zeros(nfwrd+ncur+nstate, (ncur+nstate)^i) for i = 1:order]
@@ -147,9 +147,15 @@ function  make_hh!(hh, g, gg, order, ws)
         pane_copy!(hh[order-1], g[order-1], ws.nstate .+ ws.cur_index, ws.cur_index, 1:ws.nstate, 1:ws.nstate, ws.nstate, ws.nstate + 2*ws.nshock + 1, order-1)
     end        
 end
-
+    
 function update_hh!(hh, g, gg, order, ws)
-    # derivatives of g() for forward looking variables
+    ns = ws.nstate + ws.nshock + 1
+    for i = 1:order
+        for j = 1:order
+            # derivatives of g() for forward looking variables
+            pane_copy!(ws.gfwrd[j], g[i], 1:ws.nfwrd, ws.fwrd_index, 1:ws.nstate, 1:ws.nstate, ws.nstate, ns, 0, 0, i)
+        end
+    end
     copyto!(ws.gfwrd[order],view(g[order],ws.fwrd_index,:))
     # derivatives for g(g(y,u,σ),ϵ,σ)
     vh1 = view(hh[order],ws.nstate + ws.ncur .+ (1:ws.nfwrd),:)
@@ -158,6 +164,7 @@ function update_hh!(hh, g, gg, order, ws)
                1:(ws.nstate+ws.nshock), ws.nstate + 2*ws.nshock + 1, ws.nstate + ws.nshock + 1, order)
 end
 
+#=
 function pane_copy!(dest, src, i_row_d, i_row_s, i_col_d, i_col_s,
                       d_dim, s_dim, offset_d, offset_s, order)
     nc = length(i_col_s)
@@ -191,6 +198,7 @@ function pane_copy!(dest, src, i_row_d, i_row_s, i_col_d, i_col_s,
     pane_copy!(dest, src, i_row_d, i_row_s, i_col_d,
                i_col_s, d_dim, s_dim, offset_d, offset_s, order)
 end    
+=#
 
 function make_d1!(ws, order)
     inc1 = ws.nstate
