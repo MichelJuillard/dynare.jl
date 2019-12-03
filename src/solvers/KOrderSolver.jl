@@ -15,6 +15,13 @@ mutable struct KOrderWs
     nstate::Integer
     ncur::Integer
     nshock::Integer
+    ngcol::Integer
+    nhcol::Integer
+    nhrow::Integer
+    nng::Array{Int64}
+    nnh::Array{Int64}
+    gci
+    hci
     fwrd_index::Array{Int64}
     state_index::Array{Int64}
     cur_index::Array{Int64}
@@ -39,20 +46,25 @@ mutable struct KOrderWs
     faa_di_bruno_ws_2::FaaDiBrunoWs
     linsolve_ws_1::LinSolveWS
     gs_ws::EyePlusAtKronBWS
-    function KOrderWs(nvar,nfwrd,nstate,ncur,nshock,fwrd_index,state_index,cur_index,state_range,order)
-        n1 = nstate + nshock + 1
-        n2 = n1 + nshock
-        n3 = nfwrd+nvar+nstate+nshock
+    function KOrderWs(nvar,nfwrd,nstate,ncur,nshock,fwrd_index,state_index,
+                      cur_index,state_range,order)
+        ngcol = nstate + nshock + 1
+        nhcol = ngcol + nshock
+        nhrow = nfwrd+nvar+nstate+nshock
+        nng = [ngcol^i for i = 1:(order-1)]
+        nnh = [nhcol^i for i = 1:(order-1)]
         gfwrd = [zeros(nfwrd,nstate^i) for i = 1:order]
-        gg = [zeros(nfwrd,n1^i) for i = 1:order]
-        hh = [zeros(n3, n2^i) for i = 1:order]
+        gg = [zeros(nfwrd,ngcol^i) for i = 1:order]
+        hh = [zeros(nhrow, nhcol^i) for i = 1:order]
+        gci = [CartesianIndices(gg[i]) for i = 1:order]
+        hci = [CartesianIndices(hh[i]) for i = 1:order]
         my = [zeros(ncur+nstate, nstate^i) for i = 1:order]
         zy = [zeros(nfwrd+ncur+nstate, (ncur+nstate)^i) for i = 1:order]
         dy = [zeros(ncur, nstate^i) for i = 1:order]
-        faa_di_bruno_ws_1 = FaaDiBrunoWs(nfwrd, n2, n2, order)
-        faa_di_bruno_ws_2 = FaaDiBrunoWs(nvar, n3, n2, order)
+        faa_di_bruno_ws_1 = FaaDiBrunoWs(nfwrd, nhcol, nhcol, order)
+        faa_di_bruno_ws_2 = FaaDiBrunoWs(nvar, nhrow, nhcol, order)
         linsolve_ws_1 = LinSolveWS(nvar)
-        rhs = zeros(nvar*(nstate+2*nshock+1)^order)
+        rhs = zeros(nvar*nhcol^order)
         rhs1 = zeros(nvar*max(nvar^order,nshock*(nstate+nshock)^(order-1)))
         gykf = zeros(nfwrd*nstate^order)
         gs_su = Array{Float64}(undef, nstate, nstate+nshock)
@@ -60,11 +72,14 @@ mutable struct KOrderWs
         a1 = zeros(nvar,nvar)
         b = zeros(nvar,nvar)
         c = zeros(nstate,nstate)
-        work1 = zeros(nvar*(nstate + nshock + 1)^order)
+        work1 = zeros(nvar*ngcol^order)
         work2 = similar(work1)
         gs_ws = EyePlusAtKronBWS(nvar,nvar,nstate,order)
-        new(nvar,nfwrd,nstate,ncur,nshock,fwrd_index,state_index,cur_index,state_range,gfwrd,gg,hh,
-            rhs,rhs1,my,zy,dy,gykf,gs_su,a,a1,b,c,work1,work2,faa_di_bruno_ws_1,faa_di_bruno_ws_2,linsolve_ws_1, gs_ws)
+        new(nvar, nfwrd, nstate, ncur, nshock, ngcol, nhcol, nhrow,
+            nng, nnh, gci, hci, fwrd_index, state_index, cur_index,
+            state_range, gfwrd, gg, hh, rhs, rhs1, my, zy, dy, gykf,
+            gs_su, a, a1, b, c, work1, work2, faa_di_bruno_ws_1,
+            faa_di_bruno_ws_2, linsolve_ws_1, gs_ws)
     end
 end
 
