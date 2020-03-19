@@ -1,13 +1,13 @@
 module CyclicReduction
 
-using LinSolveAlgo: LinSolveWS, linsolve_core!
+using FastLapackInterface.LinSolveAlgo: LinSolveWs, linsolve_core!
 
 using LinearAlgebra
 using LinearAlgebra.BLAS: gemm!
-export CyclicReductionWS, cyclic_reduction!, cyclic_reduction_check
+export CyclicReductionWs, cyclic_reduction!, cyclic_reduction_check
 
-mutable struct CyclicReductionWS
-    linsolve_ws::LinSolveWS
+mutable struct CyclicReductionWs
+    linsolve_ws::LinSolveWs
     ahat1::Matrix{Float64}
     a1copy::Matrix{Float64}
     m::Matrix{Float64,}
@@ -23,8 +23,8 @@ mutable struct CyclicReductionWS
     m2_a2::SubArray{Float64}
     info::Int64
 
-    function CyclicReductionWS(n)
-        linsolve_ws = LinSolveWS(n)
+    function CyclicReductionWs(n)
+        linsolve_ws = LinSolveWs(n)
         ahat1 = Matrix{Float64}(undef, n,n)
 	a1copy = Matrix{Float64}(undef, n,n)
         m = Matrix{Float64}(undef, 2*n,2*n)
@@ -44,7 +44,7 @@ mutable struct CyclicReductionWS
 end
 
 """
-    cyclic_reduction!(x::Array{Float64},a0::Array{Float64},a1::Array{Float64},a2::Array{Float64},ws::CyclicReductionWS, cvg_tol::Float64, max_it::Int64)
+    cyclic_reduction!(x::Array{Float64},a0::Array{Float64},a1::Array{Float64},a2::Array{Float64},ws::CyclicReductionWs, cvg_tol::Float64, max_it::Int64)
 
 Solve the quadratic matrix equation a0 + a1*x + a2*x*x = 0, using the cyclic reduction method from Bini et al. (???).
 
@@ -58,7 +58,7 @@ The solution is returned in matrix x. In case of nonconvergency, x is set to NaN
 DocTestSetup = quote
      using CyclicReduction
      n = 3
-     ws = CyclicReductionWS(n)
+     ws = CyclicReductionWs(n)
      a0 = [0.5 0 0; 0 0.5 0; 0 0 0];
      a1 = eye(n)
      a2 = [0 0 0; 0 0 0; 0 0 0.8]
@@ -74,7 +74,7 @@ julia> display(names(CyclicReduction))
 julia> cyclic_reduction!(x,a0,a1,a2,ws,1e-8,50)
 ```
 """
-function cyclic_reduction!(x::Array{Float64},a0::Array{Float64},a1::Array{Float64},a2::Array{Float64},ws::CyclicReductionWS, cvg_tol::Float64, max_it::Int64)
+function cyclic_reduction!(x::Array{Float64},a0::Array{Float64},a1::Array{Float64},a2::Array{Float64},ws::CyclicReductionWs, cvg_tol::Float64, max_it::Int64)
     copyto!(x,a0)
     copyto!(ws.ahat1,1,a1,1,length(a1))
     @inbounds copyto!(ws.m1_a0, a0)
@@ -85,7 +85,7 @@ function cyclic_reduction!(x::Array{Float64},a0::Array{Float64},a1::Array{Float6
     @inbounds while it < max_it
         #        ws.m = [a0; a2]*(a1\[a0 a2])
 	copyto!(ws.a1copy,a1)
-        linsolve_core!(ws.linsolve_ws,Ref{UInt8}('N'),ws.a1copy,ws.m1)
+        linsolve_core!(ws.a1copy, ws.m1, ws.linsolve_ws)
         gemm!('N','N',-1.0,ws.m2,ws.m1,0.0,ws.m)
         @simd for i in eachindex(a1)
             a1[i] += ws.m02[i] + ws.m20[i]
@@ -122,7 +122,7 @@ function cyclic_reduction!(x::Array{Float64},a0::Array{Float64},a1::Array{Float6
         fill!(x,NaN)
         return
     else
-        linsolve_core!(ws.linsolve_ws,Ref{UInt8}('N'),ws.ahat1,x)
+        linsolve_core!(ws.ahat1, x, ws.linsolve_ws)
         @inbounds lmul!(-1.0,x)
         ws.info = 0
     end        
