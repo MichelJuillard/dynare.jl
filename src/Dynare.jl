@@ -11,8 +11,8 @@ using FirstOrderSolver
 export FirstOrderSolverWS, first_order_solver
 using SolveEyePlusMinusAkronB
 export EyePlusAtKronBWS, general_sylvester_solver!
-using KOrderSolver
-export KOrderWs, k_order_solution!
+#using KOrderSolver
+#export KOrderWs, k_order_solution!
 using DynareModel
 export DynareModel
 using DynareOptions
