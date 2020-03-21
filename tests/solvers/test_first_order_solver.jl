@@ -1,29 +1,32 @@
+push!(LOAD_PATH,"../../src/")
+push!(LOAD_PATH,"../../src/linalg/")
 push!(LOAD_PATH,"../../src/models/")
+push!(LOAD_PATH,"../../src/solvers/")
+push!(LOAD_PATH,"../../src/taylor/")
 
-include("../../src/dynare.jl")
-using .Dynare
-
-import .Dynare.DynLinAlg.Kronecker.a_mul_kron_b!
+using Dynare
+using KroneckerUtils
+using model
 
 include("make_model.jl")
 
-using Base.Test
+using Test
 using MAT
-using Dynare.FirstOrder: FirstOrderSolverWS, remove_static!, get_de, first_order_solver
+using FirstOrderSolver
 
-type Cycle_Reduction
+struct Cycle_Reduction
     tol
 end
 
 cr_opt = Cycle_Reduction(1e-8)
 
-type Generalized_Schur
+struct Generalized_Schur
     criterium
 end
 
 gs_opt = Generalized_Schur(1+1e-6)
 
-type Options
+struct Options
     cycle_reduction
     generalized_schur
 end
@@ -49,8 +52,8 @@ end
 
 function test_getDE(endo_nbr,lead_lag_incidence,jacobian)
     m = Model(endo_nbr,lead_lag_incidence, 2, 0)
-    ws = FirstOrderSolverWS("GS", jacobian, m)
-    remove_static!(ws,jacobian,m.p_static)
+    ws = FirstOrderSolverWs("GS", jacobian, m)
+    FirstOrderSolver.remove_static!(ws,jacobian,m.p_static)
     @test norm(jacobian[m.n_static+1:end,m.p_static] - zeros(m.endo_nbr-m.n_static,m.n_static),Inf) < 1e-15
     D,E = get_de(jacobian[m.n_static+1:end,:],m)
     Dtarget = zeros(6,6)
@@ -63,9 +66,9 @@ end
 
 function test_solver(endo_nbr,lead_lag_incidence,options,algo,jacobian)
     m = Model(endo_nbr,lead_lag_incidence, 2, 0)
-    ws = FirstOrderSolverWS(algo, jacobian, m)
+    ws = FirstOrderSolverWs(algo, jacobian, m)
     results = ResultsPerturbationWs(m, 1)
-    remove_static!(ws,jacobian,m.p_static)
+    FirstOrderSolver.remove_static!(ws,jacobian,m.p_static)
     @test size(jacobian) == (6,14)
     println("small model first round")
     first_order_solver(results, ws,algo, jacobian, m, options)
@@ -73,17 +76,18 @@ function test_solver(endo_nbr,lead_lag_incidence,options,algo,jacobian)
     @time first_order_solver(results, ws,algo, jacobian, m, options)
     display(results.g[1])
     println("")
-    display(oo_["dr"]["ghx"][squeeze(round.(Int,oo_["dr"]["inv_order_var"]),2),:])
+    k = dropdims(round.(Int,oo_["dr"]["inv_order_var"]); dims=2)
+    display(oo_["dr"]["ghx"][k, :])
     println("")
-    display(oo_["dr"]["ghu"][squeeze(round.(Int,oo_["dr"]["inv_order_var"]),2),:])
+    display(oo_["dr"]["ghu"][k, :])
     println("")
-    res = norm(results.g[1][:,1:(m.n_bkwrd + m.n_both)]-oo_["dr"]["ghx"][squeeze(round.(Int,oo_["dr"]["inv_order_var"]),2),:],Inf)
+    res = norm(results.g[1][:,1:(m.n_bkwrd + m.n_both)]-oo_["dr"]["ghx"][k,:],Inf)
     @test res < 1e-13
 end
 
 function solve_large_model(endo_nbr,lead_lag_incidence,options,algo,jacobian)
     m = Model(endo_nbr,lead_lag_incidence, 2, 0)
-    ws = FirstOrderSolverWS(algo, jacobian, m)
+    ws = FirstOrderSolverWs(algo, jacobian, m)
     results = ResultsPerturbationWs(m, 1)
     @time    first_order_solver(results, ws,algo, jacobian, m, options)
 end    
@@ -93,7 +97,7 @@ test_model(6,lli)
 test_getDE(6, lli, jacobian)
 jacobian = hcat(jacobian,[ 0 0; 0 0; 0 0; 0 0; -1 0; 0 -1])
 test_solver(6, lli, options, "CR", jacobian)
-#test_solver(6, lli, options, "GS", jacobian)
+test_solver(6, lli, options, "GS", jacobian)
 
 n = 100
 lli2, jacobian2 = make_model(n)
