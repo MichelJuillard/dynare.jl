@@ -102,21 +102,19 @@ test_solver(6, lli, options, "GS", jacobian)
 n = 100
 lli2, jacobian2 = make_model(n)
 fu = zeros(6*n,2*n)
-col = 1
-row = 5
+cols = 1
+rows = 5
 for i=1:n
-    fu[row,col] = 1
-    fu[row+1, col+1] = 1
-    row += 6
-    col += 2
+    fu[rows, cols] = 1
+    fu[rows + 1, cols + 1] = 1
+    global rows += 6
+    global cols += 2
 end
 jacobian2 = hcat(jacobian2, fu)
 println("large model")
 solve_large_model(n*6,lli2,options,"CR",jacobian2)
 solve_large_model(n*6,lli2,options,"CR",jacobian2)
 println("OK")
-#solve_large_model(n*6,lli2,options,"GS",jacobian2)
-#solve_large_model(n*6,lli2,options,"GS",jacobian2)
 
 
 
