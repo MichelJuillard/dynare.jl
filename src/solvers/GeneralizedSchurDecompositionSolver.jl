@@ -59,6 +59,7 @@ end
 #d \left[\begin{array}{c}I\\g_2\end{array}\right]g_1 = e \left[\begin{array}{c}I\\g_2\end{array}\right]
 #```
 #"""
+using Test
 function gs_solver!(ws::GsSolverWs,d::Matrix{Float64},e::Matrix{Float64},n1::Int64,qz_criterium::Float64)
 
     dgges!('N', 'V', e, d, zeros(1,1), ws.vsr, ws.eigval, ws.dgges_ws)
@@ -73,7 +74,7 @@ function gs_solver!(ws::GsSolverWs,d::Matrix{Float64},e::Matrix{Float64},n1::Int
     ws.g2 .= ws.Z12'
     @show ws.g2
     ws.tmp2 .= ws.Z22'
-    ws.g2 .= -(ws.Z12/ws.Z22)'
+    ws.g2 .= (ws.Z12/ws.Z22)'
 #    linsolve_core!(ws.Z22', ws.g2, ws.linsolve_ws_22)
     lmul!(-1.0,ws.g2)
     ws.tmp2 .= ws.Z11'
