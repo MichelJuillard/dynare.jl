@@ -1,0 +1,8 @@
+DYNARE_PATH = dirname(Base.source_path())
+push!(LOAD_PATH, ".")
+push!(LOAD_PATH, DYNARE_PATH)
+push!(LOAD_PATH, DYNARE_PATH*"/src")
+push!(LOAD_PATH, DYNARE_PATH*"/src/linalg")
+push!(LOAD_PATH, DYNARE_PATH*"/src/models")
+push!(LOAD_PATH, DYNARE_PATH*"/src/solvers")
+push!(LOAD_PATH, DYNARE_PATH*"/src/taylor")
