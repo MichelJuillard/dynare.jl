@@ -58,13 +58,12 @@ end
 #```
 #d \left[\begin{array}{c}I\\g_2\end{array}\right]g_1 = e \left[\begin{array}{c}I\\g_2\end{array}\right]
 #```
+#The solution is returned in ``ws.g1`` and ``ws.g2``
 #"""
-using Test
 function gs_solver!(ws::GsSolverWs,d::Matrix{Float64},e::Matrix{Float64},n1::Int64,qz_criterium::Float64)
 
     dgges!('N', 'V', e, d, zeros(1,1), ws.vsr, ws.eigval, ws.dgges_ws)
     nstable = ws.dgges_ws.sdim[]
-    @show nstable
     
     if nstable < n1
         throw(UnstableSystemException)
@@ -72,48 +71,15 @@ function gs_solver!(ws::GsSolverWs,d::Matrix{Float64},e::Matrix{Float64},n1::Int
         throw(UndeterminateSystemExcpetion)
     end
     ws.g2 .= ws.Z12'
-    @show ws.g2
-    ws.tmp2 .= ws.Z22'
-    ws.g2 .= (ws.Z12/ws.Z22)'
-#    linsolve_core!(ws.Z22', ws.g2, ws.linsolve_ws_22)
+    linsolve_core!(ws.Z22', ws.g2, ws.linsolve_ws_22)
     lmul!(-1.0,ws.g2)
     ws.tmp2 .= ws.Z11'
-    @show ws.tmp2
-    #    hx1 = ws.dgges_ws.vs[1:nstable,1:nstable]/D[1:nstable, 1:nstable]
-    @show view(d,1:3,1:3)
     ws.D11 .= view(d,1:nstable,1:nstable)
-    @show ws.D11
-#    linsolve_core!(ws.D11', ws.tmp2, ws.linsolve_ws_11)
-    tmp = ws.D11'\ws.tmp2
-    ws.tmp2 .= tmp
-    @show ws.tmp2
-#    hx2 = E[1:nstable,1:nstable]/ws.dgges_ws.vs[1:nstable,1:nstable]
+    linsolve_core!(ws.D11', ws.tmp2, ws.linsolve_ws_11)
     ws.E11 .= view(e,1:nstable,1:nstable)
     ws.tmp3 .= ws.E11'
-    @show ws.tmp3
-#    linsolve_core!(ws.Z11', ws.tmp3, ws.linsolve_ws_11)
-    tmp = ws.Z11'\ws.tmp3
-    ws.tmp3 .= tmp
-    #hx = ws.tmp2*ws.tmp3
+    linsolve_core!(ws.Z11', ws.tmp3, ws.linsolve_ws_11)
     gemm!('T','T',1.0,ws.tmp2,ws.tmp3,0.0,ws.g1)
-    @show ws.g1
-#    if false
-#        for i = 1:ns
-#            for j = 1:model.n_bkwrd
-#                ws.ghx[model.i_bkwrd[j],i] = ws.hx[j,i]
-#            end
-#            for j = 1:model.n_fwrd
-#                ws.ghx[model.i_fwrd[j],i] = ws.g2[j,i]
-#            end
-#            for j = 1:model.n_both
-#                ws.ghx[model.i_both[j],i] = ws.hx[model.n_bkwrd+j,i]
-#            end
-#        end
-#    else
-#        ws.ghx[model.i_bkwrd,:] = ws.hx[1:model.n_bkwrd,:]
-#        ws.ghx[model.i_fwrd,:] = ws.g2[1:model.n_fwrd,:]
-#        ws.ghx[model.i_both,:] = ws.g2[model.n_fwrd+(1:model.n_both),:]
-#    end
 end
 
 end
